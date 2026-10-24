@@ -1,0 +1,1427 @@
+/* ==========================================================================
+   CYFROWY BLIŹNIAK ARCHITEKTONICZNY 3D – SEGMENT BLIŹNIACZY (1955 / 1966 / 2026)
+   Stylistyka: Dark Architectural Blueprint & Glassmorphism UI
+   Paleta: Granat archiwalny (#0f131a), Grafit (#161c28), Złoto/Bursztyn (#d4af37)
+   ========================================================================== */
+
+:root {
+  --bg-deep: #0b0f17;
+  --bg-navy: #0f131a;
+  --bg-panel: rgba(15, 19, 26, 0.82);
+  --bg-panel-strong: rgba(13, 17, 24, 0.94);
+  --bg-card-inner: rgba(25, 32, 44, 0.65);
+  --border-subtle: rgba(255, 255, 255, 0.1);
+  --border-gold: rgba(212, 175, 55, 0.45);
+  --gold-primary: #d4af37;
+  --gold-bright: #f0ca50;
+  --gold-dim: rgba(212, 175, 55, 0.16);
+  --text-main: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --accent-blue: #38bdf8;
+  --accent-danger: #f87171;
+  --accent-green: #4ade80;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-serif: 'Cinzel', serif;
+  --radius-lg: 12px;
+  --radius-md: 8px;
+  --radius-sm: 5px;
+  --shadow-glass: 0 14px 36px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-deep);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+#canvas-container {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;
+  cursor: grab;
+}
+
+#canvas-container:active {
+  cursor: grabbing;
+}
+
+/* Warstwa etykiet 3D rzutowanych na 2D */
+.labels-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  overflow: hidden;
+}
+
+.label-3d {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: 3px 7px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  background: rgba(11, 15, 23, 0.84);
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  color: #f8fafc;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.label-3d.label-elevation {
+  border-color: rgba(56, 189, 248, 0.5);
+  color: #bae6fd;
+}
+
+.label-3d.label-beam {
+  background: rgba(124, 45, 18, 0.88);
+  border-color: #fb923c;
+  color: #ffedd5;
+  font-size: 10px;
+}
+
+.label-3d.label-dim {
+  background: rgba(15, 23, 42, 0.86);
+  border-color: rgba(212, 175, 55, 0.65);
+  color: var(--gold-bright);
+}
+
+/* Wspólny styl Glassmorphism */
+.glass-panel {
+  background: var(--bg-panel);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-glass);
+}
+
+/* ==========================================================================
+   TOP HEADER
+   ========================================================================== */
+.top-header {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  min-height: 58px;
+  z-index: 20;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  gap: 14px;
+  border-bottom: 1px solid var(--border-gold);
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.22s ease;
+}
+
+.top-header.collapsed {
+  transform: translateY(calc(-100% - 20px));
+  opacity: 0;
+  pointer-events: none;
+}
+
+.header-divider {
+  width: 1px;
+  height: 22px;
+  background: var(--border-subtle);
+  margin: 0 2px;
+}
+
+.brand-block {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.brand-emblem {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(212, 175, 55, 0.05));
+  border: 1px solid var(--gold-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-serif);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--gold-bright);
+  flex-shrink: 0;
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.2);
+}
+
+.brand-titles {
+  min-width: 0;
+}
+
+.brand-kicker {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--gold-primary);
+  text-transform: uppercase;
+}
+
+.brand-title {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.brand-sub {
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.header-metrics {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.metric-pill {
+  background: var(--bg-card-inner);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 4px 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.metric-label {
+  font-size: 8.5px;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.metric-val {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--gold-bright);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   PRZYCISKI
+   ========================================================================== */
+button {
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.btn-primary,
+.btn-secondary,
+.btn-gold {
+  padding: 7px 12px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: rgba(56, 189, 248, 0.16);
+  border-color: rgba(56, 189, 248, 0.45);
+  color: #e0f2fe;
+}
+
+.btn-primary:hover,
+.btn-primary.active {
+  background: rgba(56, 189, 248, 0.3);
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--border-subtle);
+  color: var(--text-main);
+}
+
+.btn-secondary:hover,
+.btn-secondary.active {
+  background: rgba(212, 175, 55, 0.18);
+  border-color: var(--gold-primary);
+  color: var(--gold-bright);
+}
+
+.btn-gold {
+  background: linear-gradient(135deg, #d4af37, #b5891c);
+  color: #090d14;
+  border-color: #f3d266;
+  font-weight: 700;
+}
+
+.btn-gold:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 0 16px rgba(212, 175, 55, 0.45);
+}
+
+.btn-mini {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  padding: 3px 7px;
+  border-radius: var(--radius-sm);
+  font-size: 10.5px;
+  font-weight: 500;
+}
+
+.btn-mini:hover {
+  background: var(--gold-dim);
+  border-color: var(--gold-primary);
+  color: var(--gold-bright);
+}
+
+.btn-icon {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+}
+
+.btn-icon:hover {
+  border-color: var(--gold-primary);
+  color: var(--gold-bright);
+}
+
+.btn-full {
+  width: 100%;
+  justify-content: center;
+}
+
+.gold-text {
+  color: var(--gold-bright) !important;
+}
+
+.muted {
+  color: var(--text-muted) !important;
+}
+
+.mt-6 {
+  margin-top: 6px;
+}
+
+.mt-8 {
+  margin-top: 8px;
+}
+
+/* ==========================================================================
+   LEWY PANEL (INSPEKCJA KONSTRUKCJI, WARSTWY, PRZEKROJE)
+   ========================================================================== */
+.sidebar-left {
+  position: fixed;
+  top: 82px;
+  left: 12px;
+  bottom: 66px;
+  width: 318px;
+  z-index: 15;
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.22s ease, top 0.25s ease, bottom 0.25s ease;
+}
+
+body.top-collapsed .sidebar-left {
+  top: 12px;
+}
+
+body.bottom-collapsed .sidebar-left {
+  bottom: 12px;
+}
+
+.sidebar-left.collapsed {
+  transform: translateX(calc(-100% - 24px));
+  opacity: 0;
+  pointer-events: none;
+}
+
+.panel-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panel-header h2 {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--gold-primary);
+}
+
+.panel-header-actions,
+.header-inline-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn-section-fold {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.btn-section-fold:hover {
+  border-color: var(--gold-primary);
+  color: var(--gold-bright);
+  background: var(--gold-dim);
+}
+
+.section-toggle-header {
+  cursor: pointer;
+}
+
+.section-toggle-header .group-title {
+  margin-bottom: 0;
+}
+
+[data-collapsible-section].section-folded .section-body {
+  display: none;
+}
+
+[data-collapsible-section].section-folded .section-toggle-header {
+  margin-bottom: 0;
+}
+
+.panel-body {
+  padding: 10px 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.panel-body::-webkit-scrollbar {
+  width: 5px;
+}
+
+.panel-body::-webkit-scrollbar-thumb {
+  background: rgba(212, 175, 55, 0.3);
+  border-radius: 4px;
+}
+
+.control-group {
+  background: var(--bg-card-inner);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 9px 10px;
+}
+
+.group-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.group-title-row,
+.slider-header,
+.cut-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.cut-label-row label {
+  font-size: 11px;
+  color: var(--text-main);
+}
+
+.mono-badge {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(212, 175, 55, 0.15);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  color: var(--gold-bright);
+}
+
+/* Segmented controls */
+.segmented-control {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 3px;
+  border-radius: 6px;
+}
+
+.seg-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  padding: 5px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.seg-btn.active {
+  background: var(--gold-dim);
+  border-color: var(--gold-primary);
+  color: var(--gold-bright);
+}
+
+/* Sliders */
+.arch-slider {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.14);
+  outline: none;
+  margin: 4px 0;
+}
+
+.arch-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--gold-bright);
+  border: 2px solid #090d14;
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.7);
+}
+
+.slider-quick-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+/* Layers Checkboxes */
+.layers-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 4px;
+}
+
+.layer-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 11.5px;
+  color: var(--text-main);
+  padding: 2px 3px;
+  border-radius: 4px;
+}
+
+.layer-toggle:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.layer-toggle input {
+  display: none;
+}
+
+.toggle-box {
+  width: 15px;
+  height: 15px;
+  border-radius: 4px;
+  border: 1px solid var(--text-muted);
+  background: rgba(0, 0, 0, 0.35);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.layer-toggle input:checked + .toggle-box {
+  background: var(--gold-primary);
+  border-color: var(--gold-bright);
+}
+
+.layer-toggle input:checked + .toggle-box::after {
+  content: '✓';
+  font-size: 10px;
+  font-weight: 800;
+  color: #090d14;
+}
+
+/* ==========================================================================
+   PRAWY PANEL (KAMERA, KARTA POMIESZCZENIA, MIARKA)
+   ========================================================================== */
+.sidebar-right {
+  position: fixed;
+  top: 82px;
+  right: 12px;
+  width: 315px;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: calc(100vh - 154px);
+  overflow-y: auto;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.22s ease, top 0.25s ease, max-height 0.25s ease;
+}
+
+body.top-collapsed .sidebar-right {
+  top: 56px;
+  max-height: calc(100vh - 120px);
+}
+
+body.bottom-collapsed .sidebar-right {
+  max-height: calc(100vh - 96px);
+}
+
+.sidebar-right.collapsed {
+  transform: translateX(calc(100% + 24px));
+  opacity: 0;
+  pointer-events: none;
+}
+
+.camera-card,
+.inspector-card,
+.measure-card {
+  border-radius: var(--radius-lg);
+  padding: 12px;
+}
+
+.camera-presets-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.btn-cam {
+  background: var(--bg-card-inner);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  text-align: left;
+}
+
+.btn-cam:hover,
+.btn-cam.active {
+  background: var(--gold-dim);
+  border-color: var(--gold-primary);
+  color: var(--gold-bright);
+}
+
+.btn-mini.active {
+  background: var(--gold-dim);
+  border-color: var(--gold-primary);
+  color: var(--gold-bright);
+}
+
+/* Karta inspekcji pomieszczenia */
+.inspector-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.inspector-header h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-top: 4px;
+}
+
+.hud-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hud-badge.gold {
+  background: var(--gold-dim);
+  border: 1px solid var(--border-gold);
+  color: var(--gold-bright);
+}
+
+.mono-code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  background: rgba(0, 0, 0, 0.35);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.inspector-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.insp-stat {
+  background: var(--bg-card-inner);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.insp-stat-label {
+  font-size: 9px;
+  color: var(--text-secondary);
+}
+
+.insp-stat-val {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+
+.inspector-details {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 8px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.detail-row span {
+  color: var(--text-secondary);
+}
+
+.detail-row strong {
+  text-align: right;
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+.mono-text {
+  font-family: var(--font-mono);
+}
+
+.insp-desc {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+/* Miarka 3D */
+.measure-text {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.measure-result {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--gold-bright);
+}
+
+.measure-deltas {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ==========================================================================
+   DOLNY PASEK (RÓŻA WIATRÓW + SZYBKI WYBÓR POMIESZCZEŃ)
+   ========================================================================== */
+.bottom-bar {
+  position: fixed;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  height: 44px;
+  z-index: 15;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 12px;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.22s ease;
+}
+
+.bottom-bar.collapsed {
+  transform: translateY(calc(100% + 20px));
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   PŁYWAJĄCE UCHWYTY (DOCK TABS) ORAZ PASEK TRYBU PEŁNOEKRANOWEGO (ZEN MODE)
+   ========================================================================== */
+.dock-tab {
+  position: fixed;
+  z-index: 18;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-gold);
+  color: var(--gold-bright);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
+}
+
+.dock-tab:hover {
+  background: rgba(212, 175, 55, 0.24);
+  border-color: var(--gold-bright);
+  transform: scale(1.03);
+}
+
+.dock-top {
+  top: 12px;
+  left: 12px;
+}
+
+.dock-left {
+  top: 84px;
+  left: 12px;
+}
+
+body.top-collapsed .dock-left {
+  top: 48px;
+}
+
+.dock-right {
+  top: 84px;
+  right: 12px;
+}
+
+body.top-collapsed .dock-right {
+  top: 56px;
+}
+
+.dock-bottom {
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.dock-bottom:hover {
+  transform: translateX(-50%) scale(1.03);
+}
+
+.zen-floating-bar {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 25;
+  border-radius: 999px;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border-gold);
+  background: rgba(11, 15, 23, 0.88);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.65);
+}
+
+.zen-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--gold-bright);
+  padding: 2px 8px;
+  border-right: 1px solid var(--border-subtle);
+}
+
+.btn-zen-action {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn-zen-action:hover,
+.btn-zen-action.active {
+  background: var(--gold-dim);
+  border-color: var(--gold-primary);
+  color: var(--gold-bright);
+}
+
+.btn-zen-action.gold {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.32), rgba(212, 175, 55, 0.14));
+  border-color: var(--gold-primary);
+  color: var(--gold-bright);
+}
+
+.compass-widget {
+  display: flex;
+  align-items: center;
+  padding-right: 12px;
+  border-right: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.compass-rose {
+  display: flex;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+}
+
+.c-dir {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+}
+
+.c-dir.c-e {
+  color: var(--gold-bright);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+}
+
+.c-dir.c-w {
+  color: var(--accent-green);
+}
+
+.room-pills-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  flex: 1;
+  padding: 4px 0;
+}
+
+.room-pills-bar::-webkit-scrollbar {
+  height: 3px;
+}
+
+.room-pill {
+  background: var(--bg-card-inner);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.room-pill:hover,
+.room-pill.active {
+  background: var(--gold-dim);
+  border-color: var(--gold-primary);
+  color: var(--gold-bright);
+}
+
+.room-pill small {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  opacity: 0.8;
+}
+
+/* ==========================================================================
+   TRYB SPACERU TPP (CELOWNIK + HUD)
+   ========================================================================== */
+.walk-crosshair {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 12;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.crosshair-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--gold-bright);
+}
+
+.crosshair-ring {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid rgba(212, 175, 55, 0.65);
+}
+
+.walk-hud {
+  position: fixed;
+  bottom: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 18;
+}
+
+.walk-hud-main {
+  border-radius: var(--radius-lg);
+  padding: 10px 16px;
+  border: 1px solid var(--border-gold);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+
+.walk-hud-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hud-value {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.hud-mono {
+  font-family: var(--font-mono);
+  color: var(--accent-blue);
+}
+
+.hud-warning {
+  background: rgba(248, 113, 113, 0.2);
+  border: 1px solid var(--accent-danger);
+  color: #fecaca;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 11px;
+}
+
+.walk-hud-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+kbd {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 3px;
+  padding: 1px 5px;
+  color: var(--gold-bright);
+}
+
+.walk-hud-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.btn-action {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  padding: 4px 10px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.btn-action:hover,
+.btn-action.active {
+  background: var(--gold-dim);
+  border-color: var(--gold-primary);
+  color: var(--gold-bright);
+}
+
+/* ==========================================================================
+   MODAL DOKUMENTACJI ARCHIWALNEJ (1955 / 1966 / 2026)
+   ========================================================================== */
+.archive-dialog {
+  border: none;
+  background: transparent;
+  padding: 0;
+  max-width: 980px;
+  width: 92vw;
+  max-height: 88vh;
+  margin: auto;
+  color: var(--text-main);
+  z-index: 100;
+}
+
+.archive-dialog::backdrop {
+  background: rgba(5, 8, 14, 0.78);
+  backdrop-filter: blur(8px);
+}
+
+.modal-inner {
+  background: var(--bg-panel-strong);
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  max-height: 88vh;
+  overflow: hidden;
+}
+
+.modal-header {
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(90deg, rgba(212, 175, 55, 0.12), transparent);
+}
+
+.modal-title {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  color: var(--text-main);
+  margin-top: 3px;
+}
+
+.btn-close-modal {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  font-size: 15px;
+}
+
+.btn-close-modal:hover {
+  border-color: var(--gold-primary);
+  color: var(--gold-bright);
+}
+
+.modal-body {
+  padding: 20px 22px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.archive-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.archive-box {
+  background: var(--bg-card-inner);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--gold-primary);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+}
+
+.archive-box h4 {
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+  margin-bottom: 8px;
+}
+
+.archive-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+}
+
+.archive-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.07);
+  padding-bottom: 3px;
+}
+
+.archive-list li span {
+  color: var(--text-secondary);
+}
+
+.archive-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.archive-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.archive-table th,
+.archive-table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.archive-table th {
+  background: rgba(212, 175, 55, 0.14);
+  color: var(--gold-bright);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.archive-table tr:hover td {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.archive-table tfoot td {
+  background: rgba(212, 175, 55, 0.1);
+  font-weight: 700;
+  color: var(--gold-bright);
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ==========================================================================
+   EKRAN BLOKADY AUTORYZACYJNEJ (AUTH GATE – WEB CRYPTO API SHA-256)
+   ========================================================================== */
+.auth-gate-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: radial-gradient(circle at 50% 35%, #161f2e 0%, #090d14 75%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 390px;
+  border-radius: 16px;
+  border: 1px solid var(--border-gold);
+  background: var(--bg-panel-strong);
+  padding: 28px 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(212, 175, 55, 0.12);
+}
+
+.auth-emblem {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.28), rgba(212, 175, 55, 0.06));
+  border: 1px solid var(--gold-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--gold-bright);
+  margin-bottom: 12px;
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.25);
+}
+
+.auth-title {
+  font-family: var(--font-serif);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 6px 0 8px;
+  letter-spacing: 0.04em;
+}
+
+.auth-subtitle {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin-bottom: 18px;
+}
+
+.auth-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-input {
+  width: 100%;
+  background: rgba(5, 8, 14, 0.75);
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.35em;
+  text-align: center;
+  color: var(--gold-bright);
+  outline: none;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.auth-input:focus {
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 14px rgba(212, 175, 55, 0.35);
+}
+
+.auth-error {
+  background: rgba(248, 113, 113, 0.15);
+  border: 1px solid var(--accent-danger);
+  color: #fecaca;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
+.auth-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+  margin: 2px 0 4px;
+}
+
+.btn-key {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 10px 0;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.btn-key:hover {
+  background: var(--gold-dim);
+  border-color: var(--gold-primary);
+  color: var(--gold-bright);
+}
+
+.btn-key.key-alt {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.auth-submit {
+  padding: 10px 14px;
+  font-size: 13px;
+}
+
+@keyframes authShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-7px); }
+  40%, 80% { transform: translateX(7px); }
+}
+
+.auth-card.shake {
+  animation: authShake 0.36s ease;
+}
+
+@media (max-width: 1200px) {
+  .header-metrics {
+    display: none;
+  }
+}

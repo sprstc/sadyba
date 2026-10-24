@@ -1,0 +1,30 @@
+# System files
+.DS_Store
+Thumbs.db
+
+# Local dev utilities
+server.py
+*.pyc
+__pycache__/
+
+# Private reference documentation, scans, photos, and videos (NEVER commit)
+*.pdf
+*.PDF
+*.jpg
+*.JPG
+*.jpeg
+*.JPEG
+*.png
+*.PNG
+*.mp4
+*.MP4
+*.mov
+*.MOV
+*.zip
+*.tar.gz
+pics/
+projekty arch/
+słup*/
+video/
+wypisy/
+zdjecia*/

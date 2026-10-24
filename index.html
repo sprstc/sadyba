@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cyfrowy Bliźniak 3D – Segment Bliźniaczy (1955 / 1966 / 2026)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./src/styles/main.css" />
+
+  <!-- Importmap dla Three.js r160 ES Modules (Zero-build pipeline) -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <!-- Ekran blokady autoryzacyjnej (Web Crypto API SHA-256) przed załadowaniem sceny 3D -->
+  <div id="auth-gate-overlay" class="auth-gate-overlay">
+    <div class="auth-card glass-panel">
+      <div class="auth-emblem">SB</div>
+      <div class="brand-kicker">DOSTĘP AUTORYZOWANY • WEB CRYPTO API SHA-256</div>
+      <h2 class="auth-title">CYFROWY BLIŹNIAK ARCHITEKTONICZNY 3D</h2>
+      <p class="auth-subtitle">Wprowadź kod PIN lub hasło, aby zainicjować i odblokować model konstrukcyjny 3D.</p>
+
+      <form id="auth-gate-form" class="auth-form" autocomplete="off">
+        <input
+          id="auth-pin-input"
+          class="auth-input"
+          type="password"
+          inputmode="numeric"
+          placeholder="••••"
+          maxlength="16"
+          aria-label="Kod PIN lub hasło"
+          required
+        />
+        <div id="auth-gate-error" class="auth-error hidden" role="alert"></div>
+
+        <div class="auth-keypad" aria-label="Klawiatura numeryczna PIN">
+          <button type="button" class="btn-key" data-pin-digit="1">1</button>
+          <button type="button" class="btn-key" data-pin-digit="2">2</button>
+          <button type="button" class="btn-key" data-pin-digit="3">3</button>
+          <button type="button" class="btn-key" data-pin-digit="4">4</button>
+          <button type="button" class="btn-key" data-pin-digit="5">5</button>
+          <button type="button" class="btn-key" data-pin-digit="6">6</button>
+          <button type="button" class="btn-key" data-pin-digit="7">7</button>
+          <button type="button" class="btn-key" data-pin-digit="8">8</button>
+          <button type="button" class="btn-key" data-pin-digit="9">9</button>
+          <button type="button" class="btn-key key-alt" data-pin-digit="clear" title="Wyczyść">C</button>
+          <button type="button" class="btn-key" data-pin-digit="0">0</button>
+          <button type="button" class="btn-key key-alt" data-pin-digit="back" title="Cofnij">⌫</button>
+        </div>
+
+        <button id="btn-auth-submit" class="btn-gold btn-full auth-submit" type="submit">
+          🔓 Odblokuj i załaduj model 3D
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Główny kontener WebGL Three.js -->
+  <div id="canvas-container" aria-label="Widok 3D Cyfrowego Bliźniaka Architektonicznego"></div>
+
+  <!-- Warstwa etykiet 3D->2D (wymiary architektoniczne, rzędne, oznaczenia belek Kleina) -->
+  <div id="labels-container" class="labels-layer"></div>
+
+  <!-- Celownik i HUD trybu spaceru TPP -->
+  <div id="walk-crosshair" class="walk-crosshair hidden" aria-hidden="true">
+    <div class="crosshair-dot"></div>
+    <div class="crosshair-ring"></div>
+  </div>
+
+  <div id="walk-hud" class="walk-hud hidden">
+    <div class="walk-hud-main glass-panel">
+      <div class="walk-hud-row">
+        <span class="hud-badge gold">TRYB PIESZEGO TPP</span>
+        <span id="hud-floor-name" class="hud-value">Parter (±0.00 = +1.60 m)</span>
+        <span id="hud-elevation" class="hud-mono">Y: +1.60 m</span>
+        <span id="hud-collision" class="hud-warning hidden">⚠️ Przeszkoda</span>
+      </div>
+      <div class="walk-hud-controls">
+        <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Ruch</span>
+        <span><kbd>Shift</kbd> Bieg</span>
+        <span><kbd>Spacja</kbd> Skok</span>
+        <span><kbd>0</kbd> Ulica <kbd>1</kbd> Parter <kbd>2</kbd> I Piętro <kbd>3</kbd> Strych</span>
+        <span><kbd>V</kbd> Noclip: <strong id="hud-noclip-state">OFF</strong></span>
+        <span><kbd>P</kbd> Autopilot</span>
+        <span><kbd>Esc</kbd> Powrót do orbity</span>
+      </div>
+      <div class="walk-hud-actions">
+        <button id="btn-hud-autopilot" class="btn-action btn-gold-outline" type="button">
+          ▶ Autopilot Spaceru [P]
+        </button>
+        <button id="btn-hud-noclip" class="btn-action" type="button">
+          👻 Noclip [V]
+        </button>
+        <button id="btn-hud-exit-walk" class="btn-action" type="button">
+          ✕ Wyjdź z trybu spaceru
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pływający mini-pasek inspekcji pełnoekranowej (Tryb Czystej Bryły / Zen Mode) -->
+  <div id="zen-floating-bar" class="zen-floating-bar glass-panel hidden" role="toolbar" aria-label="Sterowanie w trybie pełnoekranowym">
+    <span class="zen-badge">TRYB ANALIZY BRYŁY 3D</span>
+    <button id="btn-zen-restore" class="btn-zen-action gold" type="button" title="Rozwiń wszystkie panele menu (Klawisz H)">
+      👁️ Pokaż menu <kbd>H</kbd>
+    </button>
+    <button id="btn-zen-autorotate" class="btn-zen-action" type="button" title="Automatyczny obrót 360° wokół bryły domu (Klawisz O)">
+      🔄 Obrót 360° <kbd>O</kbd>
+    </button>
+    <button id="btn-zen-twin" class="btn-zen-action" type="button" title="Przełącz Segment B / Cały Bliźniak A+B (Klawisz B)">
+      🏠 Bliźniak A+B <kbd>B</kbd>
+    </button>
+    <button id="btn-zen-iso" class="btn-zen-action" type="button" title="Resetuj kamerę do aksonometrii ISO (Klawisz I)">
+      📐 Widok ISO <kbd>I</kbd>
+    </button>
+    <button id="btn-zen-fullscreen" class="btn-zen-action" type="button" title="Przełącz pełny ekran przeglądarki (Klawisz F)">
+      ⛶ Pełny ekran <kbd>F</kbd>
+    </button>
+  </div>
+
+  <!-- Pływające uchwyty (Dock Tabs) do pojedynczego rozwijania zwiniętych paneli -->
+  <button id="dock-expand-top" class="dock-tab dock-top glass-panel hidden" type="button" title="Rozwiń górny pasek nagłówka">
+    ▼ Nagłówek projektu
+  </button>
+  <button id="dock-expand-left" class="dock-tab dock-left glass-panel hidden" type="button" title="Rozwiń lewy panel inspekcji konstrukcji [">
+    ▶ Inspekcja i Warstwy
+  </button>
+  <button id="dock-expand-right" class="dock-tab dock-right glass-panel hidden" type="button" title="Rozwiń prawy panel kamery i pomieszczeń ]">
+    ◀ Kamera i Inspekcja
+  </button>
+  <button id="dock-expand-bottom" class="dock-tab dock-bottom glass-panel hidden" type="button" title="Rozwiń dolny pasek pomieszczeń i kompas">
+    ▲ Kompas i Pomieszczenia
+  </button>
+
+  <!-- Nagłówek Architektoniczny (Top Bar) -->
+  <header id="top-header" class="top-header glass-panel">
+    <div class="brand-block">
+      <div class="brand-emblem">SB</div>
+      <div class="brand-titles">
+        <div class="brand-kicker">ARCHITEKTURA MODERNISTYCZNA LAT 50./60. • SEGMENT PÓŁNOCNY (TYP B)</div>
+        <h1 class="brand-title">SEGMENT BLIŹNIACZY <span class="brand-sub">— CYFROWY BLIŹNIAK ARCHITEKTONICZNO-KONSTRUKCYJNY (1955 / 1966 / 2026)</span></h1>
+      </div>
+    </div>
+
+    <div class="header-metrics">
+      <div class="metric-pill">
+        <span class="metric-label">POW. ZABUDOWY (1966)</span>
+        <span class="metric-val">85,17 m²</span>
+      </div>
+      <div class="metric-pill">
+        <span class="metric-label">POW. CAŁKOWITA (POMIAR)</span>
+        <span class="metric-val">222,7 m²</span>
+      </div>
+      <div class="metric-pill">
+        <span class="metric-label">KUBATURA</span>
+        <span class="metric-val">614,0 m³</span>
+      </div>
+      <div class="metric-pill">
+        <span class="metric-label">DZIAŁKA EWID.</span>
+        <span class="metric-val">387 m² (10,52×30,13 m)</span>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button id="btn-walk-mode" class="btn-primary" type="button" title="Włącz tryb spaceru z awatarem 1.80 m">
+        🚶 Spacer TPP
+      </button>
+      <button id="btn-autopilot-header" class="btn-secondary" type="button" title="Automatyczna prezentacja budynku po punktach trasy [P]">
+        🎬 Autopilot
+      </button>
+      <button id="btn-measure-tool" class="btn-secondary" type="button" title="Miarka inżynieryjna 3D (kliknij 2 punkty na modelu)">
+        📏 Miarka 3D
+      </button>
+      <button id="btn-open-archive" class="btn-gold" type="button" title="Otwórz operat inwentaryzacyjny z 1966 r., obliczenia statyczne z 1955 r. i tabelę porównawczą">
+        📜 Operat 1966
+      </button>
+      <div class="header-divider" aria-hidden="true"></div>
+      <button id="btn-zen-mode" class="btn-secondary" type="button" title="Zwiń wszystkie menu, aby swobodnie obracać i analizować czystą bryłę 3D (Klawisz H)">
+        👁️ Ukryj menu <kbd>H</kbd>
+      </button>
+      <button id="btn-fullscreen" class="btn-secondary" type="button" title="Tryb pełnoekranowy z czystą bryłą 3D (Klawisz F)">
+        ⛶ Pełny ekran <kbd>F</kbd>
+      </button>
+      <button id="btn-lock-app" class="btn-icon" type="button" title="Zablokuj aplikację (wymagaj ponownie kodu PIN)">🔒</button>
+      <button id="btn-collapse-top" class="btn-icon" type="button" title="Zwiń górny pasek nagłówka">▲</button>
+    </div>
+  </header>
+
+  <!-- Lewy Panel: Inżynieria, Warstwy, Eksplozja, Przekroje, Warianty Historyczne -->
+  <aside id="left-sidebar" class="sidebar-left glass-panel">
+    <div class="panel-header">
+      <h2>INSPEKCJA KONSTRUKCJI</h2>
+      <div class="panel-header-actions">
+        <button id="btn-fold-all-left" class="btn-icon" type="button" title="Zwiń/rozwiń wszystkie sekcje wewnątrz panelu">⊟</button>
+        <button id="btn-collapse-left" class="btn-icon" type="button" title="Ukryj lewy panel boczny (Klawisz [)">◀</button>
+      </div>
+    </div>
+
+    <div class="panel-body">
+      <!-- Tryb bryły i epoki -->
+      <section class="control-group" data-collapsible-section>
+        <div class="group-title-row section-toggle-header">
+          <span class="group-title">KONFIGURACJA BRYŁY I EPOKI</span>
+          <button class="btn-section-fold" type="button" title="Zwiń/rozwiń sekcję">▾</button>
+        </div>
+        <div class="section-body">
+          <div class="segmented-control" role="group" aria-label="Tryb segmentu">
+            <button id="btn-mode-single" class="seg-btn active" type="button">Segment B (Północny)</button>
+            <button id="btn-mode-twin" class="seg-btn" type="button">Cały Bliźniak (A+B)</button>
+          </div>
+          <div class="segmented-control mt-6" role="group" aria-label="Stan historyczny">
+            <button id="btn-era-1966" class="seg-btn active" type="button" title="Stan wg inwentaryzacji 1966 r. i pomiarów 2026 (z werandą i drugim garażem)">1966 / 2026 (Z werandą)</button>
+            <button id="btn-era-1955" class="seg-btn" type="button" title="Projekt pierwotny z 1955 r. (otwarty taras parteru, kubatura 533 m³)">1955 (Projekt pierwotny)</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Suwak Exploded View -->
+      <section class="control-group" data-collapsible-section>
+        <div class="slider-header section-toggle-header">
+          <span class="group-title">ROZSTRZELENIE KONDYGNACJI (EXPLODED)</span>
+          <div class="header-inline-right">
+            <span id="val-explode" class="mono-badge">0%</span>
+            <button class="btn-section-fold" type="button" title="Zwiń/rozwiń sekcję">▾</button>
+          </div>
+        </div>
+        <div class="section-body">
+          <input id="slider-explode" type="range" min="0" max="100" value="0" step="1" class="arch-slider" />
+          <div class="slider-quick-btns">
+            <button class="btn-mini" data-explode="0" type="button">Złożony (0%)</button>
+            <button class="btn-mini" data-explode="45" type="button">Inspekcja Kleina (45%)</button>
+            <button class="btn-mini" data-explode="100" type="button">Pełna eksplozja (100%)</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Przekroje dynamiczne Clipping Planes -->
+      <section class="control-group" data-collapsible-section>
+        <div class="group-title-row section-toggle-header">
+          <span class="group-title">PRZEKROJE DYNAMICZNE (CLIPPING)</span>
+          <div class="header-inline-right">
+            <button id="btn-reset-cuts" class="btn-mini" type="button">Reset cięć</button>
+            <button class="btn-section-fold" type="button" title="Zwiń/rozwiń sekcję">▾</button>
+          </div>
+        </div>
+
+        <div class="section-body">
+          <div class="cut-control">
+            <div class="cut-label-row">
+              <label for="slider-cut-y">Poziomy Y (Rzuty kondygnacji)</label>
+              <span id="val-cut-y" class="mono-badge">WYŁ.</span>
+            </div>
+            <input id="slider-cut-y" type="range" min="-1.2" max="11.5" value="11.5" step="0.05" class="arch-slider" />
+            <div class="slider-quick-btns">
+              <button class="btn-mini" data-cut-y="0.5" type="button">Piwnica</button>
+              <button class="btn-mini" data-cut-y="2.9" type="button">Parter</button>
+              <button class="btn-mini" data-cut-y="5.9" type="button">I Piętro</button>
+              <button class="btn-mini" data-cut-y="8.6" type="button">Poddasze</button>
+              <button class="btn-mini" data-cut-y="11.5" type="button">Pełny</button>
+            </div>
+          </div>
+
+          <div class="cut-control mt-8">
+            <div class="cut-label-row">
+              <label for="slider-cut-x">Poprzeczny X (Wschód ↔ Zachód)</label>
+              <span id="val-cut-x" class="mono-badge">WYŁ.</span>
+            </div>
+            <input id="slider-cut-x" type="range" min="-9.0" max="6.5" value="6.5" step="0.05" class="arch-slider" />
+          </div>
+
+          <div class="cut-control mt-8">
+            <div class="cut-label-row">
+              <label for="slider-cut-z">Podłużny Z (Północ ↔ Południe)</label>
+              <span id="val-cut-z" class="mono-badge">WYŁ.</span>
+            </div>
+            <input id="slider-cut-z" type="range" min="-7.8" max="6.5" value="-7.8" step="0.05" class="arch-slider" />
+          </div>
+        </div>
+      </section>
+
+      <!-- Warstwy modelu (Layers) -->
+      <section class="control-group" data-collapsible-section>
+        <div class="group-title-row section-toggle-header">
+          <span class="group-title">WARSTWY ELEMENTÓW (LAYERS)</span>
+          <div class="header-inline-right">
+            <button id="btn-xray-klein" class="btn-mini gold-text" type="button" title="Prześwietl ściany, aby wyeksponować stalowy ruszt stropów Kleina i więźbę">🔍 Rentgen Kleina</button>
+            <button class="btn-section-fold" type="button" title="Zwiń/rozwiń sekcję">▾</button>
+          </div>
+        </div>
+
+        <div class="section-body">
+          <div class="layers-grid">
+            <label class="layer-toggle">
+              <input type="checkbox" data-layer="roofCover" checked />
+              <span class="toggle-box"></span>
+              <span class="toggle-name">Pokrycie dachu (Karpiówka + lukarny)</span>
+            </label>
+            <label class="layer-toggle">
+              <input type="checkbox" data-layer="roofTruss" checked />
+              <span class="toggle-box"></span>
+              <span class="toggle-name">Więźba stolcowo-kleszczowa + komin</span>
+            </label>
+            <label class="layer-toggle">
+              <input type="checkbox" data-layer="atticWalls" checked />
+              <span class="toggle-box"></span>
+              <span class="toggle-name">Ścianki poddasza (Piętro 2: 37+13 m²)</span>
+            </label>
+            <label class="layer-toggle">
+              <input type="checkbox" data-layer="firstFloor" checked />
+              <span class="toggle-box"></span>
+              <span class="toggle-name">I Piętro (+4.70 m) i Taras (15,9 m²)</span>
+            </label>
+            <label class="layer-toggle">
+              <input type="checkbox" data-layer="groundFloor" checked />
+              <span class="toggle-box"></span>
+              <span class="toggle-name">Parter (+1.60 m), Weranda i Schody</span>
+            </label>
+            <label class="layer-toggle">
+              <input type="checkbox" data-layer="kleinSlabs" checked />
+              <span class="toggle-box"></span>
+              <span class="toggle-name">Stropy Kleina (Belki I NP 24/22/18/14)</span>
+            </label>
+            <label class="layer-toggle">
+              <input type="checkbox" data-layer="basement" checked />
+              <span class="toggle-box"></span>
+              <span class="toggle-name">Podziemie (-0.92 m), Garaże i Ławy</span>
+            </label>
+            <label class="layer-toggle">
+              <input type="checkbox" data-layer="interiors" checked />
+              <span class="toggle-box"></span>
+              <span class="toggle-name">Wyposażenie, boazeria i kotłownia</span>
+            </label>
+            <label class="layer-toggle">
+              <input type="checkbox" data-layer="vines" checked />
+              <span class="toggle-box"></span>
+              <span class="toggle-name">Winorośl ogrodowa na werandzie</span>
+            </label>
+            <label class="layer-toggle">
+              <input type="checkbox" data-layer="utilityPole" checked />
+              <span class="toggle-box"></span>
+              <span class="toggle-name">Słup energetyczny ŻN (do demontażu)</span>
+            </label>
+            <label class="layer-toggle">
+              <input type="checkbox" data-layer="surroundings" checked />
+              <span class="toggle-box"></span>
+              <span class="toggle-name">Działka 387 m², ulica frontowa i ogród</span>
+            </label>
+            <label class="layer-toggle">
+              <input type="checkbox" data-layer="dimensions" />
+              <span class="toggle-box"></span>
+              <span class="toggle-name">Linie wymiarowe działki 3D</span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- Heliodon / Oświetlenie słoneczne -->
+      <section class="control-group" data-collapsible-section>
+        <div class="slider-header section-toggle-header">
+          <span class="group-title">HELIODON (EKSPOZYCJA SŁONECZNA)</span>
+          <div class="header-inline-right">
+            <span id="val-sun-time" class="mono-badge">14:30 (Zachód/Ogród)</span>
+            <button class="btn-section-fold" type="button" title="Zwiń/rozwiń sekcję">▾</button>
+          </div>
+        </div>
+        <div class="section-body">
+          <input id="slider-sun-time" type="range" min="6" max="20" value="14.5" step="0.25" class="arch-slider" />
+        </div>
+      </section>
+    </div>
+  </aside>
+
+  <!-- Prawy Panel: Presety Kamery, Karta Inspekcji Pomieszczenia i Narzędzie Miarki -->
+  <aside id="right-sidebar" class="sidebar-right">
+    <!-- Presety Kamery -->
+    <div id="camera-card" class="glass-panel camera-card" data-collapsible-section>
+      <div class="group-title-row section-toggle-header">
+        <span class="group-title">WIDOKI ARCHITEKTONICZNE (KAMERA)</span>
+        <div class="header-inline-right">
+          <button id="btn-autorotate-cam" class="btn-mini" type="button" title="Automatyczny obrót 360° wokół budynku (Klawisz O)">🔄 360°</button>
+          <button class="btn-section-fold" type="button" title="Zwiń/rozwiń kartę widoków kamery">▾</button>
+          <button id="btn-collapse-right" class="btn-icon" type="button" title="Ukryj cały prawy panel (Klawisz ])">▶</button>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="camera-presets-grid">
+          <button class="btn-cam active" data-cam="iso" type="button">📐 Aksonometria ISO</button>
+          <button class="btn-cam" data-cam="east" type="button">🏛️ Ulica (Wschód)</button>
+          <button class="btn-cam" data-cam="west" type="button">🌿 Ogród (Zachód)</button>
+          <button class="btn-cam" data-cam="north" type="button">🚪 Wejście (Północ)</button>
+          <button class="btn-cam" data-cam="top" type="button">🗺️ Rzut z góry (Top)</button>
+          <button class="btn-cam" data-cam="section" type="button">🔪 Przekrój 1966</button>
+          <button class="btn-cam" data-cam="stairs" type="button">🪜 Schody zabiegowe</button>
+          <button class="btn-cam" data-cam="boiler" type="button">🔥 Kotłownia (-1)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Karta Inspekcji Pomieszczenia (Raycasting) -->
+    <div id="room-inspector-card" class="glass-panel inspector-card" data-collapsible-section>
+      <div class="inspector-header section-toggle-header">
+        <div>
+          <span id="insp-floor-badge" class="hud-badge gold">PARTER (±0.00)</span>
+          <h3 id="insp-room-name">Salon (Pokój dzienny)</h3>
+        </div>
+        <div class="header-inline-right">
+          <span id="insp-room-code" class="mono-code">P0-01</span>
+          <button class="btn-section-fold" type="button" title="Zwiń/rozwiń kartę inspekcji pomieszczenia">▾</button>
+        </div>
+      </div>
+
+      <div class="section-body">
+        <div class="inspector-metrics">
+          <div class="insp-stat">
+            <span class="insp-stat-label">Inwentaryzacja 1966</span>
+            <strong id="insp-area-1966" class="insp-stat-val gold-text">21,96 m²</strong>
+          </div>
+          <div class="insp-stat">
+            <span class="insp-stat-label">Pomiar laserowy 3D</span>
+            <strong id="insp-area-2026" class="insp-stat-val">21,80 m²</strong>
+          </div>
+          <div class="insp-stat">
+            <span class="insp-stat-label">Projekt 1955</span>
+            <strong id="insp-area-1955" class="insp-stat-val muted">22,00 m²</strong>
+          </div>
+        </div>
+
+        <div class="inspector-details">
+          <div class="detail-row">
+            <span>Wymiary w świetle:</span>
+            <strong id="insp-dims" class="mono-text">5,56 × 3,95 m (h = 2,80 m)</strong>
+          </div>
+          <div class="detail-row">
+            <span>Rzędna posadzki:</span>
+            <strong id="insp-elev" class="mono-text">Y = +1,60 m (±0,00 proj.)</strong>
+          </div>
+          <div class="detail-row">
+            <span>Posadzka (1955/1966):</span>
+            <strong id="insp-floor-mat">Klepka dębowa w jodełkę na ślepej podłodze</strong>
+          </div>
+          <div class="detail-row">
+            <span>Strop nad pomieszczeniem:</span>
+            <strong id="insp-ceiling-mat">Strop Kleina (I NP 22/24 co 1,25 m + cegła)</strong>
+          </div>
+        </div>
+
+        <p id="insp-description" class="insp-desc">
+          Główny salon traktu ogrodowego z szerokim dwuskrzydłowym przejściem z holu, oknem północnym i wyjściem na oszkloną werandę zachodnią. Kliknij dowolne pomieszczenie w modelu 3D, aby zbadać jego metrykę.
+        </p>
+
+        <div class="inspector-actions">
+          <button id="btn-teleport-room" class="btn-secondary btn-full" type="button">
+            🎯 Przenieś awatara / kamerę do tego pomieszczenia
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Karta Miarki 3D (widoczna po włączeniu pomiaru) -->
+    <div id="measure-card" class="glass-panel measure-card hidden">
+      <div class="inspector-header">
+        <span class="hud-badge gold">MIARKA INŻYNIERYJNA 3D</span>
+        <button id="btn-clear-measure" class="btn-mini" type="button">Wyczyść</button>
+      </div>
+      <p id="measure-status" class="measure-text">Kliknij pierwszy punkt na dowolnym elemencie budynku...</p>
+      <div id="measure-result" class="measure-result">0,00 m</div>
+      <div id="measure-deltas" class="measure-deltas mono-text">ΔX: 0.00 m | ΔY: 0.00 m | ΔZ: 0.00 m</div>
+    </div>
+  </aside>
+
+  <!-- Dolny pasek szybkiego wyboru pomieszczeń i róży wiatrów -->
+  <footer id="bottom-bar" class="bottom-bar glass-panel">
+    <div class="compass-widget" title="Orientacja geodezyjna: Wschód (+X) = Ulica, Zachód (-X) = Ogród, Północ (-Z) = Wejście, Południe (+Z) = Dylatacja">
+      <div id="compass-rose" class="compass-rose">
+        <span class="c-dir c-n">N (Wejście)</span>
+        <span class="c-dir c-e">E (Ulica)</span>
+        <span class="c-dir c-s">S (Bliźniak)</span>
+        <span class="c-dir c-w">W (Ogród)</span>
+      </div>
+    </div>
+    <div id="room-pills-bar" class="room-pills-bar" aria-label="Szybki wybór pomieszczenia">
+      <!-- Generowane dynamicznie z houseSpec.js -->
+    </div>
+    <button id="btn-collapse-bottom" class="btn-icon" type="button" title="Zwiń dolny pasek pomieszczeń">▼</button>
+  </footer>
+
+  <!-- Modal Dokumentacji Archiwalnej 1955 / 1966 / 2026 -->
+  <dialog id="archive-modal" class="archive-dialog">
+    <div class="modal-inner glass-panel">
+      <div class="modal-header">
+        <div>
+          <div class="brand-kicker">OPERAT ARCHIWALNY • DOKUMENTACJA PROJEKTOWA I INWENTARYZACYJNA</div>
+          <h2 class="modal-title">METRYKA BUDOWLANA I KONSTRUKCYJNA – SEGMENT BLIŹNIACZY (1955 / 1966 / 2026)</h2>
+        </div>
+        <button id="btn-close-archive" class="btn-close-modal" type="button" aria-label="Zamknij">✕</button>
+      </div>
+      <div id="archive-modal-content" class="modal-body">
+        <!-- Wypełniane przez ArchiveModal.js -->
+      </div>
+    </div>
+  </dialog>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
