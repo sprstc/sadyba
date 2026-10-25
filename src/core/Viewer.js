@@ -27,27 +27,63 @@ export class Viewer {
     this.scene.background = new THREE.Color(0x0c1118);
     this.scene.fog = new THREE.FogExp2(0x0c1118, 0.008);
 
+    const isMobile =
+      /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+      (window.innerWidth <= 768 && 'ontouchstart' in window);
+    this.isMobile = isMobile;
+
+    const width = this.container.clientWidth || window.innerWidth || 800;
+    const height = this.container.clientHeight || window.innerHeight || 600;
+    const aspect = width / (height || 1);
+
     this.camera = new THREE.PerspectiveCamera(
-      46,
-      window.innerWidth / window.innerHeight,
+      aspect < 1.0 ? 56 : 46,
+      aspect,
       0.1,
       260
     );
 
-    this.renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      powerPreference: 'high-performance',
-    });
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    const rendererOptions = {
+      antialias: !isMobile,
+      powerPreference: isMobile ? 'default' : 'high-performance',
+      precision: isMobile ? 'mediump' : 'highp',
+      alpha: false,
+    };
+
+    try {
+      this.renderer = new THREE.WebGLRenderer(rendererOptions);
+    } catch (e1) {
+      console.warn('Pierwotna inicjalizacja WebGLRenderer nie powiodła się, fallback:', e1);
+      this.renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'default' });
+    }
+
+    this.renderer.setSize(width, height);
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobile ? 1.5 : 2));
+    this.renderer.setClearColor(0x0c1118, 1);
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = isMobile ? THREE.BasicShadowMap : THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.08;
 
     this.canvas = this.renderer.domElement;
+    this.canvas.style.display = 'block';
+    this.canvas.style.width = '100%';
+    this.canvas.style.height = '100%';
+    this.canvas.style.touchAction = 'none';
+    this.canvas.style.backgroundColor = '#0c1118';
     this.container.innerHTML = '';
     this.container.appendChild(this.canvas);
+
+    // Bezpieczna obsługa utraty i przywrócenia kontekstu GPU na urządzeniach mobilnych
+    this.canvas.addEventListener('webglcontextlost', (event) => {
+      event.preventDefault();
+      console.warn('Three.js: WebGL Context Lost.');
+    }, false);
+
+    this.canvas.addEventListener('webglcontextrestored', () => {
+      console.info('Three.js: WebGL Context Restored.');
+      this.renderer.render(this.scene, this.camera);
+    }, false);
 
     this.materials = new MaterialsManager();
     this.sectionManager = new SectionManager(this.renderer);
@@ -119,8 +155,9 @@ export class Viewer {
 
     this.sunLight = new THREE.DirectionalLight(0xfff7ed, 2.2);
     this.sunLight.castShadow = true;
-    this.sunLight.shadow.mapSize.width = 2048;
-    this.sunLight.shadow.mapSize.height = 2048;
+    const shadowMapDim = this.isMobile ? 1024 : 2048;
+    this.sunLight.shadow.mapSize.width = shadowMapDim;
+    this.sunLight.shadow.mapSize.height = shadowMapDim;
     this.sunLight.shadow.camera.near = 1.0;
     this.sunLight.shadow.camera.far = 80.0;
     const d = 22;
@@ -368,11 +405,27 @@ export class Viewer {
     return next;
   }
 
+  handleResize() {
+    const width = this.container.clientWidth || window.innerWidth;
+    const height = this.container.clientHeight || window.innerHeight;
+    if (width === 0 || height === 0) return;
+    const aspect = width / height;
+    this.camera.aspect = aspect;
+    if (aspect < 1.0 && this.camera.fov < 50) {
+      this.camera.fov = 56;
+    }
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(width, height);
+  }
+
   bindInteractionEvents() {
     window.addEventListener('resize', () => {
-      this.camera.aspect = window.innerWidth / window.innerHeight;
-      this.camera.updateProjectionMatrix();
-      this.renderer.setSize(window.innerWidth, window.innerHeight);
+      this.handleResize();
+    });
+
+    window.addEventListener('orientationchange', () => {
+      setTimeout(() => this.handleResize(), 150);
+      setTimeout(() => this.handleResize(), 400);
     });
 
     this.canvas.addEventListener('pointerdown', (e) => {

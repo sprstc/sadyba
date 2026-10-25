@@ -20,6 +20,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   const authGate = new AuthGate();
   await authGate.waitForUnlock();
 
+  // Wymuś aktualizację wymiarów po ukryciu wirtualnej klawiatury na telefonach
+  window.dispatchEvent(new Event('resize'));
+
   const viewer = new Viewer(container, labelsContainer);
   const ui = new UIManager(viewer);
 
@@ -27,4 +30,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   window.archDigitalTwin = { viewer, ui, authGate };
 
   viewer.start();
+
+  // Dodatkowe odświeżenie geometrii po ustabilizowaniu paska adresu i viewportu na Androidzie
+  setTimeout(() => viewer.handleResize(), 100);
+  setTimeout(() => viewer.handleResize(), 350);
 });

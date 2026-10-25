@@ -24,9 +24,18 @@ export class CameraManager {
     this.controls.autoRotate = false;
     this.controls.autoRotateSpeed = 1.15;
 
-    // Domyślny widok izometryczny NE (od ulicy frontowej i wejścia północnego)
-    this.camera.position.set(18.5, 11.5, -15.5);
-    this.controls.target.set(0.0, 3.8, -3.0);
+    // Domyślny widok izometryczny NE (dopasowany do proporcji ekranu mobilnego i desktopowego)
+    const aspect = window.innerWidth / (window.innerHeight || 1);
+    if (aspect < 1.0) {
+      this.camera.fov = 56;
+      this.camera.position.set(24.0, 15.0, -20.0);
+      this.controls.target.set(0.0, 3.5, -3.0);
+    } else {
+      this.camera.fov = 46;
+      this.camera.position.set(18.5, 11.5, -15.5);
+      this.controls.target.set(0.0, 3.8, -3.0);
+    }
+    this.camera.updateProjectionMatrix();
     this.controls.update();
 
     this.transition = null;

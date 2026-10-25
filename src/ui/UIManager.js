@@ -27,7 +27,7 @@ export class UIManager {
     };
     this.zenMode = false;
 
-    this.currentLevelKey = 'groundFloor';
+    this.currentLevelKey = 'all';
     this.currentViewMode = 'level'; // 'level' | 'room'
 
     this.initCallbacks();
@@ -45,9 +45,9 @@ export class UIManager {
     this.bindMoreMenu();
     this.bindMobileNavigation();
 
-    // Renderowanie selektora kondygnacji i inicjalizacja widoku
+    // Renderowanie selektora kondygnacji i inicjalizacja widoku (domyślnie cały budynek bez cięcia)
     this.renderLevelPicker();
-    this.selectLevel('groundFloor', true);
+    this.selectLevel('all', true);
   }
 
   initCallbacks() {
