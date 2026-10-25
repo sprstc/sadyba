@@ -1425,3 +1425,547 @@ kbd {
     display: none;
   }
 }
+
+/* ==========================================================================
+   DROPDOWN MENU & HEADER ACTIONS
+   ========================================================================== */
+.menu-wrap {
+  position: relative;
+}
+
+.btn-more {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 200px;
+  border-radius: var(--radius-md);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 100;
+  background: var(--bg-panel-strong);
+  border: 1px solid var(--border-gold);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7);
+}
+
+.dropdown-menu.hidden {
+  display: none !important;
+}
+
+.menu-item {
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 11.5px;
+  font-weight: 500;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.menu-item:hover {
+  background: var(--gold-dim);
+  color: var(--gold-bright);
+}
+
+.menu-sep {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 4px 0;
+}
+
+/* ==========================================================================
+   SELEKTOR KONDYGNACJI (LEVEL PICKER)
+   ========================================================================== */
+.level-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.level-btn {
+  background: var(--bg-card-inner);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.16s ease;
+  text-align: left;
+}
+
+.level-btn:hover {
+  border-color: var(--border-gold);
+  background: rgba(212, 175, 55, 0.1);
+}
+
+.level-btn.active {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.22), rgba(212, 175, 55, 0.08));
+  border-color: var(--gold-primary);
+  box-shadow: 0 0 12px rgba(212, 175, 55, 0.25);
+}
+
+.level-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.level-name {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-main);
+}
+
+.level-btn.active .level-name {
+  color: var(--gold-bright);
+}
+
+.level-meta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.level-arrow {
+  font-size: 14px;
+  color: var(--text-muted);
+  transition: transform 0.16s ease, color 0.16s ease;
+}
+
+.level-btn.active .level-arrow {
+  color: var(--gold-bright);
+  transform: translateX(2px);
+}
+
+.level-badge {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(56, 189, 248, 0.16);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #bae6fd;
+}
+
+/* ==========================================================================
+   PRAWY PANEL: KARTA SZCZEGÓŁÓW (DETAILS CARD)
+   ========================================================================== */
+.details-card {
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.details-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 8px;
+}
+
+.details-eyebrow {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--gold-primary);
+  text-transform: uppercase;
+}
+
+.details-back {
+  background: transparent;
+  border: none;
+  color: var(--accent-blue);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.details-back:hover {
+  color: #bae6fd;
+  text-decoration: underline;
+}
+
+.details-view {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.details-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.details-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: 0.02em;
+}
+
+.chip {
+  align-self: flex-start;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  background: var(--gold-dim);
+  border: 1px solid var(--border-gold);
+  color: var(--gold-bright);
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.stat {
+  background: var(--bg-card-inner);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stat-label {
+  font-size: 8.5px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.stat-val {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.fact-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 8px 0;
+}
+
+.fact {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.fact dt {
+  color: var(--text-secondary);
+}
+
+.fact dd {
+  font-weight: 500;
+  color: var(--text-main);
+  text-align: right;
+}
+
+.details-desc {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+/* Siatka pomieszczeń kondygnacji */
+.rooms-chip-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.room-chip {
+  background: var(--bg-card-inner);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 7px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.16s ease;
+  text-align: left;
+}
+
+.room-chip:hover {
+  border-color: var(--border-gold);
+  background: rgba(212, 175, 55, 0.1);
+}
+
+.room-chip.active {
+  background: var(--gold-dim);
+  border-color: var(--gold-primary);
+  color: var(--gold-bright);
+}
+
+.room-chip-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.room-code-tag {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: var(--text-muted);
+  background: rgba(0, 0, 0, 0.35);
+  padding: 1px 4px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.room-name-text {
+  font-size: 11.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.room-area-text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--gold-bright);
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   DOLNY PASEK KAMERY (CAMERA STRIP)
+   ========================================================================== */
+.bar-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--gold-primary);
+  text-transform: uppercase;
+  flex-shrink: 0;
+  padding-right: 6px;
+  border-right: 1px solid var(--border-subtle);
+}
+
+.camera-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  flex: 1;
+  padding: 2px 0;
+}
+
+.camera-strip::-webkit-scrollbar {
+  height: 3px;
+}
+
+.camera-strip .btn-cam {
+  white-space: nowrap;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+}
+
+.btn-block {
+  width: 100%;
+  justify-content: center;
+}
+
+.slider-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9.5px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ==========================================================================
+   NAWIGACJA MOBILNA I RESPONSIVE DESIGN (<= 768px)
+   ========================================================================== */
+.mobile-nav {
+  display: none;
+}
+
+@media (min-width: 769px) {
+  .mobile-nav {
+    display: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .desktop-only {
+    display: none !important;
+  }
+
+  /* Nagłówek mobilny: czysty, bez przelewania */
+  .top-header {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    min-height: 48px;
+    padding: 6px 10px;
+    gap: 8px;
+  }
+
+  .brand-emblem {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+    border-radius: 6px;
+  }
+
+  .brand-title {
+    font-size: 13px;
+  }
+
+  .brand-sub {
+    font-size: 10px;
+  }
+
+  .btn-primary,
+  .btn-secondary,
+  .btn-gold {
+    padding: 6px 9px;
+    font-size: 11px;
+  }
+
+  .btn-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 13px;
+  }
+
+  /* Panele jako wysuwane dolne arkusze (Bottom Sheets) */
+  .sidebar-left,
+  .sidebar-right {
+    position: fixed;
+    top: auto !important;
+    bottom: 60px !important;
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+    max-height: 62vh !important;
+    border-radius: var(--radius-lg);
+    z-index: 40;
+    transform: translateY(calc(100% + 80px));
+    opacity: 0;
+    pointer-events: none;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.8);
+    transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.22s ease;
+  }
+
+  .sidebar-left.sheet-open,
+  .sidebar-right.sheet-open {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .bottom-bar {
+    bottom: 60px;
+    left: 8px;
+    right: 8px;
+    height: 52px;
+    z-index: 40;
+    transform: translateY(calc(100% + 80px));
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.22s ease;
+  }
+
+  .bottom-bar.sheet-open {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Pasek nawigacji dolnej na telefonie */
+  .mobile-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: calc(52px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    border-top: 1px solid var(--border-gold);
+    border-radius: 0;
+    background: rgba(11, 15, 23, 0.94);
+  }
+
+  .mnav-btn {
+    flex: 1;
+    height: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.16s ease;
+  }
+
+  .mnav-btn span:first-child {
+    font-size: 16px;
+  }
+
+  .mnav-btn:hover,
+  .mnav-btn.active {
+    color: var(--gold-bright);
+    background: rgba(212, 175, 55, 0.12);
+  }
+
+  /* Wyłącz pływające uchwyty i pasek zen na telefonie */
+  .dock-tab,
+  .zen-floating-bar {
+    display: none !important;
+  }
+}

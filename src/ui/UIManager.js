@@ -1,10 +1,17 @@
 /**
  * src/ui/UIManager.js
  * Kompleksowy menedżer interfejsu użytkownika (Dark Architectural Blueprint UI)
- * łączący wszystkie kontrolki z index.html z silnikiem 3D Viewer.js.
+ * łączący kontrolki z index.html z silnikiem 3D Viewer.js oraz poziomami (levelsSpec.js).
  */
 
 import { ROOMS_SPEC } from '../data/houseSpec.js';
+import {
+  LEVELS,
+  WHOLE_BUILDING,
+  getLevel,
+  getRoomsForLevel,
+  levelKeyForClipY,
+} from '../data/levelsSpec.js';
 import { ArchiveModal } from './ArchiveModal.js';
 
 export class UIManager {
@@ -13,12 +20,15 @@ export class UIManager {
     this.archiveModal = new ArchiveModal();
 
     this.panelStates = {
-      top: false,    // false = rozwinięty, true = zwinięty
+      top: false,
       left: false,
       right: false,
       bottom: false,
     };
     this.zenMode = false;
+
+    this.currentLevelKey = 'groundFloor';
+    this.currentViewMode = 'level'; // 'level' | 'room'
 
     this.initCallbacks();
     this.bindSidebarToggle();
@@ -31,16 +41,18 @@ export class UIManager {
     this.bindWalkControls();
     this.bindMeasureTool();
     this.bindInspectorActions();
-    this.renderRoomPills();
+    this.bindDetailsNavigation();
+    this.bindMoreMenu();
+    this.bindMobileNavigation();
 
-    // Domyślnie wybierz Salon ogrodowy na parterze (g-salon)
-    this.viewer.selectRoomById('g-salon', false);
+    // Renderowanie selektora kondygnacji i inicjalizacja widoku
+    this.renderLevelPicker();
+    this.selectLevel('groundFloor', true);
   }
 
   initCallbacks() {
     this.viewer.callbacks.onRoomSelected = (roomSpec) => {
-      this.updateRoomInspector(roomSpec);
-      this.highlightActivePill(roomSpec.id);
+      this.showRoomDetails(roomSpec);
     };
 
     this.viewer.callbacks.onMeasureUpdate = (data) => {
@@ -89,10 +101,254 @@ export class UIManager {
     };
   }
 
-  /**
-   * Ustawia stan zwinięcia konkretnego panelu ('top' | 'left' | 'right' | 'bottom')
-   * oraz synchronizuje pływające uchwyty (Dock Tabs) i pasek Zen.
-   */
+  // =========================================================================
+  // SELEKTOR KONDYGNACJI I KARTA SZCZEGÓŁÓW (LEWY -> PRAWY PANEL)
+  // =========================================================================
+
+  renderLevelPicker() {
+    const container = document.getElementById('level-picker');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const allItems = [...LEVELS, WHOLE_BUILDING];
+    allItems.forEach((lvl) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'level-btn';
+      btn.setAttribute('data-level-key', lvl.key);
+      btn.setAttribute('role', 'radio');
+      btn.setAttribute('aria-checked', 'false');
+
+      if (lvl.key === WHOLE_BUILDING.key) {
+        btn.innerHTML = `
+          <div class="level-info">
+            <span class="level-name">${lvl.name}</span>
+            <span class="level-meta">Wszystkie poziomy</span>
+          </div>
+          <span class="level-badge">3D</span>
+        `;
+      } else {
+        btn.innerHTML = `
+          <div class="level-info">
+            <span class="level-name">${lvl.name}</span>
+            <span class="level-meta">${lvl.projElev} m · ${lvl.area2026.toFixed(1)} m²</span>
+          </div>
+          <span class="level-arrow">›</span>
+        `;
+      }
+
+      btn.addEventListener('click', () => {
+        this.selectLevel(lvl.key, true);
+      });
+
+      container.appendChild(btn);
+    });
+  }
+
+  selectLevel(levelKey, applyCut = true) {
+    this.currentLevelKey = levelKey;
+
+    // Aktualizacja aktywnego przycisku w selektorze po lewej stronie
+    const buttons = document.querySelectorAll('#level-picker .level-btn');
+    buttons.forEach((b) => {
+      const isActive = b.getAttribute('data-level-key') === levelKey;
+      b.classList.toggle('active', isActive);
+      b.setAttribute('aria-checked', isActive ? 'true' : 'false');
+    });
+
+    const level = getLevel(levelKey);
+
+    // Dynamiczny przekrój poziomy 3D
+    if (applyCut && typeof level.clipY === 'number') {
+      const cutY = document.getElementById('slider-cut-y');
+      const valY = document.getElementById('val-cut-y');
+      if (level.key === WHOLE_BUILDING.key) {
+        this.viewer.sectionManager.setClipY(12.5);
+        if (cutY) cutY.value = '11.5';
+        if (valY) valY.textContent = 'WYŁ.';
+      } else {
+        this.viewer.sectionManager.setClipY(level.clipY);
+        if (cutY) cutY.value = String(level.clipY);
+        if (valY) valY.textContent = `Y = +${level.clipY.toFixed(2)} m`;
+      }
+    }
+
+    // Wyświetlenie karty szczegółów kondygnacji w prawym panelu
+    this.showLevelDetails(levelKey);
+  }
+
+  showLevelDetails(levelKey) {
+    this.currentViewMode = 'level';
+    const levelView = document.getElementById('details-level-view');
+    const roomView = document.getElementById('details-room-view');
+    const backBtn = document.getElementById('btn-details-back');
+    const eyebrow = document.getElementById('details-eyebrow');
+
+    if (roomView) roomView.classList.add('hidden');
+    if (levelView) levelView.classList.remove('hidden');
+    if (backBtn) backBtn.classList.add('hidden');
+
+    if (levelKey === WHOLE_BUILDING.key) {
+      if (eyebrow) eyebrow.textContent = 'Budynek';
+      if (levelView) {
+        levelView.innerHTML = `
+          <div class="details-title-block">
+            <span class="chip">Segment B (Północny)</span>
+            <h3 class="details-title">Cały budynek</h3>
+          </div>
+
+          <div class="stat-grid">
+            <div class="stat">
+              <span class="stat-label">Pow. całkowita</span>
+              <strong class="stat-val gold-text">222,7 m²</strong>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Zabudowa 1966</span>
+              <strong class="stat-val">85,17 m²</strong>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Kubatura</span>
+              <strong class="stat-val">614,0 m³</strong>
+            </div>
+          </div>
+
+          <p class="details-desc">
+            Modernistyczny segment bliźniaczy (1955 / 1966 / 2026). Tradycyjna konstrukcja murowana
+            ze stropami Kleina na belkach stalowych I NP. Wybierz kondygnację po lewej stronie, aby zbadać jej rzut i pomieszczenia.
+          </p>
+
+          <span class="group-title mt-8">Kondygnacje budynku</span>
+          <div class="rooms-chip-grid">
+            ${LEVELS.map(
+              (l) => `
+              <button class="room-chip" type="button" data-select-level="${l.key}">
+                <div class="room-chip-title">
+                  <span class="room-name-text">${l.name}</span>
+                  <span class="room-code-tag">${l.projElev} m</span>
+                </div>
+                <strong class="room-area-text">${l.area2026.toFixed(1).replace('.', ',')} m²</strong>
+              </button>
+            `
+            ).join('')}
+          </div>
+        `;
+
+        levelView.querySelectorAll('[data-select-level]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            this.selectLevel(btn.getAttribute('data-select-level'), true);
+          });
+        });
+      }
+      return;
+    }
+
+    const level = getLevel(levelKey);
+    const rooms = getRoomsForLevel(levelKey);
+
+    if (eyebrow) eyebrow.textContent = `Kondygnacja · ${level.projElev} m`;
+
+    if (levelView) {
+      levelView.innerHTML = `
+        <div class="details-title-block">
+          <span class="chip">${level.projElev} m (Y = ${level.worldY >= 0 ? '+' : ''}${level.worldY.toFixed(2)} m)</span>
+          <h3 class="details-title">${level.name}</h3>
+        </div>
+
+        <div class="stat-grid">
+          <div class="stat">
+            <span class="stat-label">Pow. kondygnacji</span>
+            <strong class="stat-val gold-text">${level.area2026.toFixed(1).replace('.', ',')} m²</strong>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Wysokość</span>
+            <strong class="stat-val">${level.clearHeight.toFixed(2).replace('.', ',')} m</strong>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Pokoje</span>
+            <strong class="stat-val">${rooms.length}</strong>
+          </div>
+        </div>
+
+        <dl class="fact-list">
+          <div class="fact">
+            <dt>Konstrukcja stropu</dt>
+            <dd>${level.structureAbove}</dd>
+          </div>
+        </dl>
+
+        <p class="details-desc">${level.summary}</p>
+
+        <span class="group-title mt-8">Pomieszczenia tej kondygnacji</span>
+        <div class="rooms-chip-grid">
+          ${rooms
+            .map(
+              (r) => `
+            <button class="room-chip ${r.id === this.viewer.selectedRoomId ? 'active' : ''}" type="button" data-room-chip="${r.id}">
+              <div class="room-chip-title">
+                <span class="room-code-tag">${r.code}</span>
+                <span class="room-name-text">${r.name}</span>
+              </div>
+              <strong class="room-area-text">${r.area2026.toFixed(1).replace('.', ',')} m²</strong>
+            </button>
+          `
+            )
+            .join('')}
+        </div>
+      `;
+
+      levelView.querySelectorAll('[data-room-chip]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const roomId = btn.getAttribute('data-room-chip');
+          this.viewer.selectRoomById(roomId, true);
+        });
+      });
+    }
+  }
+
+  showRoomDetails(roomSpec) {
+    this.currentViewMode = 'room';
+    const levelView = document.getElementById('details-level-view');
+    const roomView = document.getElementById('details-room-view');
+    const backBtn = document.getElementById('btn-details-back');
+    const backLabel = document.getElementById('details-back-label');
+    const eyebrow = document.getElementById('details-eyebrow');
+
+    if (levelView) levelView.classList.add('hidden');
+    if (roomView) roomView.classList.remove('hidden');
+
+    const level = getLevel(roomSpec.floorKey);
+    this.currentLevelKey = roomSpec.floorKey;
+
+    // Synchronizacja zaznaczenia w selektorze kondygnacji
+    document.querySelectorAll('#level-picker .level-btn').forEach((b) => {
+      const isActive = b.getAttribute('data-level-key') === roomSpec.floorKey;
+      b.classList.toggle('active', isActive);
+      b.setAttribute('aria-checked', isActive ? 'true' : 'false');
+    });
+
+    if (backBtn && backLabel) {
+      backBtn.classList.remove('hidden');
+      backLabel.textContent = level.name;
+    }
+
+    if (eyebrow) {
+      eyebrow.textContent = `Pomieszczenie · ${level.name}`;
+    }
+
+    this.updateRoomInspector(roomSpec);
+  }
+
+  bindDetailsNavigation() {
+    const backBtn = document.getElementById('btn-details-back');
+    backBtn?.addEventListener('click', () => {
+      this.showLevelDetails(this.currentLevelKey);
+    });
+  }
+
+  // =========================================================================
+  // ZARZĄDZANIE PANELAMI I TRYB ZEN
+  // =========================================================================
+
   setPanelCollapsed(panelKey, collapsed) {
     this.panelStates[panelKey] = Boolean(collapsed);
 
@@ -119,7 +375,6 @@ export class UIManager {
 
     this.zenMode = allCollapsed;
 
-    // Pływający pasek Zen pojawia się, gdy górny nagłówek jest zwinięty lub gdy aktywny jest tryb Zen / Pełny ekran
     const zenBar = document.getElementById('zen-floating-bar');
     const showZenBar = allCollapsed || this.panelStates.top || Boolean(document.fullscreenElement);
     zenBar?.classList.toggle('hidden', !showZenBar);
@@ -127,18 +382,16 @@ export class UIManager {
     const zenRestoreBtn = document.getElementById('btn-zen-restore');
     if (zenRestoreBtn) {
       zenRestoreBtn.innerHTML = allCollapsed
-        ? '👁️ Pokaż wszystkie menu <kbd>H</kbd>'
-        : '👁️ Ukryj wszystkie menu <kbd>H</kbd>';
+        ? '👁️ Pokaż panele'
+        : '👁️ Ukryj panele';
     }
 
     const headerZenBtn = document.getElementById('btn-zen-mode');
     headerZenBtn?.classList.toggle('active', allCollapsed);
 
-    // Pływające uchwyty boczne dla pojedynczych paneli
     Object.entries(map).forEach(([key, objs]) => {
       if (!objs.dock) return;
       if (key === 'top' && showZenBar) {
-        // Gdy widoczny jest pasek Zen na górze, uchwyt top-dock po lewej stronie też jest dostępny do przywrócenia samego nagłówka
         objs.dock.classList.toggle('hidden', !this.panelStates.top);
       } else {
         objs.dock.classList.toggle('hidden', !this.panelStates[key]);
@@ -155,7 +408,6 @@ export class UIManager {
   }
 
   bindSidebarToggle() {
-    // 1. Pojedyncze zwijanie / rozwijanie 4 głównych paneli
     document.getElementById('btn-collapse-top')?.addEventListener('click', () => {
       this.setPanelCollapsed('top', true);
     });
@@ -164,30 +416,33 @@ export class UIManager {
     });
 
     document.getElementById('btn-collapse-left')?.addEventListener('click', () => {
-      this.setPanelCollapsed('left', true);
+      if (window.innerWidth > 768) {
+        this.setPanelCollapsed('left', true);
+      }
     });
     document.getElementById('dock-expand-left')?.addEventListener('click', () => {
       this.setPanelCollapsed('left', false);
     });
 
     document.getElementById('btn-collapse-right')?.addEventListener('click', () => {
-      this.setPanelCollapsed('right', true);
+      if (window.innerWidth > 768) {
+        this.setPanelCollapsed('right', true);
+      }
     });
     document.getElementById('dock-expand-right')?.addEventListener('click', () => {
       this.setPanelCollapsed('right', false);
     });
 
     document.getElementById('btn-collapse-bottom')?.addEventListener('click', () => {
-      this.setPanelCollapsed('bottom', true);
+      if (window.innerWidth > 768) {
+        this.setPanelCollapsed('bottom', true);
+      }
     });
     document.getElementById('dock-expand-bottom')?.addEventListener('click', () => {
       this.setPanelCollapsed('bottom', false);
     });
   }
 
-  /**
-   * Zwijanie i rozwijanie poszczególnych sekcji (akordeonów) wewnątrz lewego i prawego panelu
-   */
   bindSectionAccordions() {
     const sections = document.querySelectorAll('[data-collapsible-section]');
     sections.forEach((sec) => {
@@ -207,32 +462,14 @@ export class UIManager {
       });
 
       header?.addEventListener('click', (e) => {
-        // Ignoruj kliknięcie w inne przyciski akcji znajdujące się w nagłówku (np. Reset cięć, Rentgen, 360°, ▶)
         if (e.target.closest('button') && !e.target.closest('.btn-section-fold')) {
           return;
         }
         toggleSection();
       });
     });
-
-    // Przycisk zbiorczego zwinięcia/rozwinięcia wszystkich sekcji w lewym panelu
-    const foldAllLeftBtn = document.getElementById('btn-fold-all-left');
-    foldAllLeftBtn?.addEventListener('click', () => {
-      const leftSections = document.querySelectorAll('#left-sidebar [data-collapsible-section]');
-      const anyOpen = Array.from(leftSections).some((s) => !s.classList.contains('section-folded'));
-      leftSections.forEach((sec) => {
-        sec.classList.toggle('section-folded', anyOpen);
-        const btn = sec.querySelector('.btn-section-fold');
-        if (btn) btn.textContent = anyOpen ? '▸' : '▾';
-      });
-      foldAllLeftBtn.textContent = anyOpen ? '⊞' : '⊟';
-    });
   }
 
-  /**
-   * Obsługa Trybu Czystej Bryły (Zen Mode [H]), Pełnego Ekranu Przeglądarki ([F]),
-   * Auto-Obrotu 360° ([O]) oraz skrótów klawiaturowych do analizy bryły.
-   */
   bindZenAndFullscreen() {
     const zenBtn = document.getElementById('btn-zen-mode');
     const zenRestoreBtn = document.getElementById('btn-zen-restore');
@@ -263,13 +500,11 @@ export class UIManager {
       try {
         if (!document.fullscreenElement) {
           await document.documentElement.requestFullscreen();
-          // Wchodząc w pełny ekran, automatycznie zwiń menu, aby od razu odsłonić czystą bryłę 3D
           this.toggleZenMode(true);
         } else {
           await document.exitFullscreen();
         }
       } catch (err) {
-        // Fallback: jeśli przeglądarka zablokuje Fullscreen API, włącz pełny tryb Zen
         this.toggleZenMode(!this.zenMode);
       }
     };
@@ -282,23 +517,19 @@ export class UIManager {
       fsBtn?.classList.toggle('active', isFs);
       zenFsBtn?.classList.toggle('active', isFs);
       if (zenFsBtn) {
-        zenFsBtn.innerHTML = isFs ? '⛶ Wyjdź <kbd>F</kbd>' : '⛶ Pełny ekran <kbd>F</kbd>';
+        zenFsBtn.innerHTML = isFs ? '⛶ Wyjdź' : '⛶ Pełny ekran';
       }
-      // Odśwież widoczność paska Zen
       this.setPanelCollapsed('top', this.panelStates.top);
     });
 
-    // Szybkie przełączanie Segment B / Cały Bliźniak A+B z paska Zen
     zenTwinBtn?.addEventListener('click', () => {
       this.setTwinModeUI(!this.viewer.isTwinMode);
     });
 
-    // Szybki reset do widoku ISO z paska Zen
     zenIsoBtn?.addEventListener('click', () => {
       this.viewer.cameraManager.setPreset('iso');
     });
 
-    // Globalne skróty klawiaturowe do inspekcji bryły
     window.addEventListener('keydown', (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
       const archiveDialog = document.getElementById('archive-modal');
@@ -364,7 +595,7 @@ export class UIManager {
   }
 
   bindSlidersAndCuts() {
-    // 1. Suwak Exploded View i przyciski szybkiego wyboru
+    // 1. Exploded View
     const explodeSlider = document.getElementById('slider-explode');
     const explodeVal = document.getElementById('val-explode');
 
@@ -385,10 +616,10 @@ export class UIManager {
       });
     });
 
-    // 2. Przekroje dynamiczne Y, X, Z
+    // 2. Przekroje dynamiczne
     const cutY = document.getElementById('slider-cut-y');
     const valY = document.getElementById('val-cut-y');
-    const applyCutY = (vFloat) => {
+    const applyCutY = (vFloat, syncPicker = true) => {
       const v = parseFloat(vFloat);
       if (cutY) cutY.value = String(v);
       if (v >= 11.45) {
@@ -398,14 +629,22 @@ export class UIManager {
         this.viewer.sectionManager.setClipY(v);
         if (valY) valY.textContent = `Y = +${v.toFixed(2)} m`;
       }
+
+      if (syncPicker) {
+        const detectedKey = levelKeyForClipY(v);
+        if (detectedKey !== this.currentLevelKey) {
+          this.currentLevelKey = detectedKey;
+          document.querySelectorAll('#level-picker .level-btn').forEach((b) => {
+            const isActive = b.getAttribute('data-level-key') === detectedKey;
+            b.classList.toggle('active', isActive);
+            b.setAttribute('aria-checked', isActive ? 'true' : 'false');
+          });
+          this.showLevelDetails(detectedKey);
+        }
+      }
     };
 
-    cutY?.addEventListener('input', (e) => applyCutY(e.target.value));
-    document.querySelectorAll('button[data-cut-y]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        applyCutY(btn.getAttribute('data-cut-y'));
-      });
-    });
+    cutY?.addEventListener('input', (e) => applyCutY(e.target.value, true));
 
     const cutX = document.getElementById('slider-cut-x');
     const valX = document.getElementById('val-cut-x');
@@ -442,9 +681,10 @@ export class UIManager {
       if (valY) valY.textContent = 'WYŁ.';
       if (valX) valX.textContent = 'WYŁ.';
       if (valZ) valZ.textContent = 'WYŁ.';
+      this.selectLevel(WHOLE_BUILDING.key, false);
     });
 
-    // 3. Heliodon (słońce 52.2°N)
+    // 3. Heliodon
     const sunSlider = document.getElementById('slider-sun-time');
     const sunVal = document.getElementById('val-sun-time');
     sunSlider?.addEventListener('input', (e) => {
@@ -453,10 +693,7 @@ export class UIManager {
       const hrs = Math.floor(h);
       const mins = Math.round((h - hrs) * 60);
       const timeStr = `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
-      let sideLabel = 'Południe';
-      if (h < 11.0) sideLabel = 'Wschód/Ulica';
-      else if (h >= 14.0) sideLabel = 'Zachód/Ogród';
-      if (sunVal) sunVal.textContent = `${timeStr} (${sideLabel})`;
+      if (sunVal) sunVal.textContent = timeStr;
     });
   }
 
@@ -473,7 +710,7 @@ export class UIManager {
     xrayBtn?.addEventListener('click', () => {
       const active = this.viewer.toggleXRayMode();
       xrayBtn.classList.toggle('active', active);
-      xrayBtn.textContent = active ? '🔍 Rentgen: AKTYWNY' : '🔍 Rentgen Kleina';
+      xrayBtn.textContent = active ? '🔍 Rentgen: WŁ.' : '🔍 Rentgen konstrukcji';
     });
   }
 
@@ -488,7 +725,6 @@ export class UIManager {
         this.syncWalkHudVisibility(false);
 
         if (camKey === 'section') {
-          // Automatycznie załącz przekrój podłużny Z jak na rysunku z 1966 r.
           const cutZ = document.getElementById('slider-cut-z');
           const valZ = document.getElementById('val-cut-z');
           if (cutZ) cutZ.value = '-3.2';
@@ -578,27 +814,83 @@ export class UIManager {
     document.getElementById('insp-description').textContent = room.description;
   }
 
-  renderRoomPills() {
-    const bar = document.getElementById('room-pills-bar');
-    if (!bar) return;
-    bar.innerHTML = '';
+  // =========================================================================
+  // MENU DROPDOWN & MOBILE NAVIGATION (SHEETS)
+  // =========================================================================
 
-    for (const room of ROOMS_SPEC) {
-      const btn = document.createElement('button');
-      btn.className = 'room-pill';
-      btn.setAttribute('data-room-id', room.id);
-      btn.innerHTML = `${room.name} <small>${room.area2026.toFixed(1)}m²</small>`;
+  bindMoreMenu() {
+    const moreBtn = document.getElementById('btn-more-menu');
+    const moreMenu = document.getElementById('more-menu');
+    if (!moreBtn || !moreMenu) return;
+
+    const toggleMenu = (forceState) => {
+      const isHidden = moreMenu.classList.contains('hidden');
+      const show = typeof forceState === 'boolean' ? forceState : isHidden;
+      moreMenu.classList.toggle('hidden', !show);
+      moreBtn.setAttribute('aria-expanded', show ? 'true' : 'false');
+    };
+
+    moreBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleMenu();
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!moreMenu.contains(e.target) && e.target !== moreBtn) {
+        toggleMenu(false);
+      }
+    });
+
+    moreMenu.querySelectorAll('button').forEach((btn) => {
       btn.addEventListener('click', () => {
-        this.viewer.selectRoomById(room.id, true);
+        toggleMenu(false);
       });
-      bar.appendChild(btn);
-    }
+    });
   }
 
-  highlightActivePill(roomId) {
-    const pills = document.querySelectorAll('.room-pill');
-    pills.forEach((p) => {
-      p.classList.toggle('active', p.getAttribute('data-room-id') === roomId);
+  bindMobileNavigation() {
+    const mobileButtons = document.querySelectorAll('#mobile-nav .mnav-btn');
+    const sidebars = {
+      left: document.getElementById('left-sidebar'),
+      right: document.getElementById('right-sidebar'),
+      bottom: document.getElementById('bottom-bar'),
+    };
+
+    const closeAllMobileSheets = () => {
+      Object.values(sidebars).forEach((sb) => sb?.classList.remove('sheet-open'));
+      mobileButtons.forEach((btn) => {
+        btn.classList.remove('active');
+        btn.setAttribute('aria-pressed', 'false');
+      });
+    };
+
+    mobileButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const sheetKey = btn.getAttribute('data-sheet');
+        const target = sidebars[sheetKey];
+        if (!target) return;
+
+        const isCurrentlyOpen = target.classList.contains('sheet-open');
+        closeAllMobileSheets();
+
+        if (!isCurrentlyOpen) {
+          target.classList.add('sheet-open');
+          target.classList.remove('collapsed');
+          btn.classList.add('active');
+          btn.setAttribute('aria-pressed', 'true');
+        }
+      });
+    });
+
+    // Przyciski zamykania w nagłówkach paneli
+    document.getElementById('btn-collapse-left')?.addEventListener('click', () => {
+      if (window.innerWidth <= 768) closeAllMobileSheets();
+    });
+    document.getElementById('btn-collapse-right')?.addEventListener('click', () => {
+      if (window.innerWidth <= 768) closeAllMobileSheets();
+    });
+    document.getElementById('btn-collapse-bottom')?.addEventListener('click', () => {
+      if (window.innerWidth <= 768) closeAllMobileSheets();
     });
   }
 }

@@ -2,7 +2,8 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0f17" />
   <title>Cyfrowy Bliźniak 3D – Segment Bliźniaczy (1955 / 1966 / 2026)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -78,7 +79,7 @@
   <div id="walk-hud" class="walk-hud hidden">
     <div class="walk-hud-main glass-panel">
       <div class="walk-hud-row">
-        <span class="hud-badge gold">TRYB PIESZEGO TPP</span>
+        <span class="hud-badge gold">Spacer</span>
         <span id="hud-floor-name" class="hud-value">Parter (±0.00 = +1.60 m)</span>
         <span id="hud-elevation" class="hud-mono">Y: +1.60 m</span>
         <span id="hud-collision" class="hud-warning hidden">⚠️ Przeszkoda</span>
@@ -87,410 +88,278 @@
         <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Ruch</span>
         <span><kbd>Shift</kbd> Bieg</span>
         <span><kbd>Spacja</kbd> Skok</span>
-        <span><kbd>0</kbd> Ulica <kbd>1</kbd> Parter <kbd>2</kbd> I Piętro <kbd>3</kbd> Strych</span>
+        <span><kbd>0</kbd>–<kbd>3</kbd> Piętra</span>
         <span><kbd>V</kbd> Noclip: <strong id="hud-noclip-state">OFF</strong></span>
-        <span><kbd>P</kbd> Autopilot</span>
-        <span><kbd>Esc</kbd> Powrót do orbity</span>
+        <span><kbd>Esc</kbd> Wyjście</span>
       </div>
       <div class="walk-hud-actions">
-        <button id="btn-hud-autopilot" class="btn-action btn-gold-outline" type="button">
-          ▶ Autopilot Spaceru [P]
-        </button>
-        <button id="btn-hud-noclip" class="btn-action" type="button">
-          👻 Noclip [V]
-        </button>
-        <button id="btn-hud-exit-walk" class="btn-action" type="button">
-          ✕ Wyjdź z trybu spaceru
-        </button>
+        <button id="btn-hud-autopilot" class="btn-action" type="button">▶ Autopilot</button>
+        <button id="btn-hud-noclip" class="btn-action" type="button">👻 Noclip</button>
+        <button id="btn-hud-exit-walk" class="btn-action" type="button">✕ Zakończ spacer</button>
       </div>
     </div>
   </div>
 
-  <!-- Pływający mini-pasek inspekcji pełnoekranowej (Tryb Czystej Bryły / Zen Mode) -->
-  <div id="zen-floating-bar" class="zen-floating-bar glass-panel hidden" role="toolbar" aria-label="Sterowanie w trybie pełnoekranowym">
-    <span class="zen-badge">TRYB ANALIZY BRYŁY 3D</span>
-    <button id="btn-zen-restore" class="btn-zen-action gold" type="button" title="Rozwiń wszystkie panele menu (Klawisz H)">
-      👁️ Pokaż menu <kbd>H</kbd>
-    </button>
-    <button id="btn-zen-autorotate" class="btn-zen-action" type="button" title="Automatyczny obrót 360° wokół bryły domu (Klawisz O)">
-      🔄 Obrót 360° <kbd>O</kbd>
-    </button>
-    <button id="btn-zen-twin" class="btn-zen-action" type="button" title="Przełącz Segment B / Cały Bliźniak A+B (Klawisz B)">
-      🏠 Bliźniak A+B <kbd>B</kbd>
-    </button>
-    <button id="btn-zen-iso" class="btn-zen-action" type="button" title="Resetuj kamerę do aksonometrii ISO (Klawisz I)">
-      📐 Widok ISO <kbd>I</kbd>
-    </button>
-    <button id="btn-zen-fullscreen" class="btn-zen-action" type="button" title="Przełącz pełny ekran przeglądarki (Klawisz F)">
-      ⛶ Pełny ekran <kbd>F</kbd>
-    </button>
+  <!-- Pływający mini-pasek w trybie ukrytych paneli (Zen Mode) – tylko desktop -->
+  <div id="zen-floating-bar" class="zen-floating-bar glass-panel hidden" role="toolbar" aria-label="Sterowanie przy ukrytych panelach">
+    <button id="btn-zen-restore" class="btn-zen-action gold" type="button" title="Pokaż / ukryj wszystkie panele (H)">👁️ Pokaż panele</button>
+    <button id="btn-zen-autorotate" class="btn-zen-action" type="button" title="Obrót 360° (O)">🔄 360°</button>
+    <button id="btn-zen-twin" class="btn-zen-action" type="button" title="Segment B / Bliźniak A+B (B)">🏠 A+B</button>
+    <button id="btn-zen-iso" class="btn-zen-action" type="button" title="Widok ISO (I)">📐 ISO</button>
+    <button id="btn-zen-fullscreen" class="btn-zen-action" type="button" title="Pełny ekran (F)">⛶ Pełny ekran</button>
   </div>
 
-  <!-- Pływające uchwyty (Dock Tabs) do pojedynczego rozwijania zwiniętych paneli -->
-  <button id="dock-expand-top" class="dock-tab dock-top glass-panel hidden" type="button" title="Rozwiń górny pasek nagłówka">
-    ▼ Nagłówek projektu
-  </button>
-  <button id="dock-expand-left" class="dock-tab dock-left glass-panel hidden" type="button" title="Rozwiń lewy panel inspekcji konstrukcji [">
-    ▶ Inspekcja i Warstwy
-  </button>
-  <button id="dock-expand-right" class="dock-tab dock-right glass-panel hidden" type="button" title="Rozwiń prawy panel kamery i pomieszczeń ]">
-    ◀ Kamera i Inspekcja
-  </button>
-  <button id="dock-expand-bottom" class="dock-tab dock-bottom glass-panel hidden" type="button" title="Rozwiń dolny pasek pomieszczeń i kompas">
-    ▲ Kompas i Pomieszczenia
-  </button>
+  <!-- Uchwyty do rozwijania pojedynczych zwiniętych paneli (desktop) -->
+  <button id="dock-expand-top" class="dock-tab dock-top glass-panel hidden" type="button" title="Rozwiń nagłówek">▼ Menu</button>
+  <button id="dock-expand-left" class="dock-tab dock-left glass-panel hidden" type="button" title="Rozwiń panel modelu ([)">▶ Model</button>
+  <button id="dock-expand-right" class="dock-tab dock-right glass-panel hidden" type="button" title="Rozwiń panel szczegółów (])">◀ Szczegóły</button>
+  <button id="dock-expand-bottom" class="dock-tab dock-bottom glass-panel hidden" type="button" title="Rozwiń pasek widoków">▲ Widoki</button>
 
-  <!-- Nagłówek Architektoniczny (Top Bar) -->
+  <!-- Nagłówek -->
   <header id="top-header" class="top-header glass-panel">
     <div class="brand-block">
-      <div class="brand-emblem">SB</div>
+      <div class="brand-emblem" aria-hidden="true">SB</div>
       <div class="brand-titles">
-        <div class="brand-kicker">ARCHITEKTURA MODERNISTYCZNA LAT 50./60. • SEGMENT PÓŁNOCNY (TYP B)</div>
-        <h1 class="brand-title">SEGMENT BLIŹNIACZY <span class="brand-sub">— CYFROWY BLIŹNIAK ARCHITEKTONICZNO-KONSTRUKCYJNY (1955 / 1966 / 2026)</span></h1>
+        <h1 class="brand-title">Segment bliźniaczy B</h1>
+        <p class="brand-sub">Cyfrowy bliźniak · 1955 / 1966 / 2026</p>
       </div>
     </div>
 
-    <div class="header-metrics">
-      <div class="metric-pill">
-        <span class="metric-label">POW. ZABUDOWY (1966)</span>
-        <span class="metric-val">85,17 m²</span>
-      </div>
-      <div class="metric-pill">
-        <span class="metric-label">POW. CAŁKOWITA (POMIAR)</span>
-        <span class="metric-val">222,7 m²</span>
-      </div>
-      <div class="metric-pill">
-        <span class="metric-label">KUBATURA</span>
-        <span class="metric-val">614,0 m³</span>
-      </div>
-      <div class="metric-pill">
-        <span class="metric-label">DZIAŁKA EWID.</span>
-        <span class="metric-val">387 m² (10,52×30,13 m)</span>
-      </div>
-    </div>
+    <nav class="header-actions" aria-label="Akcje">
+      <button id="btn-walk-mode" class="btn-secondary desktop-only" type="button" title="Tryb spaceru z awatarem 1,80 m (WASD + mysz)">
+        🚶 <span class="btn-label">Spacer</span>
+      </button>
+      <button id="btn-measure-tool" class="btn-secondary" type="button" title="Miarka 3D – kliknij 2 punkty na modelu">
+        📏 <span class="btn-label">Miarka</span>
+      </button>
+      <button id="btn-open-archive" class="btn-gold" type="button" title="Operat 1966, obliczenia 1955 i tabela porównawcza">
+        📜 <span class="btn-label">Operat</span>
+      </button>
 
-    <div class="header-actions">
-      <button id="btn-walk-mode" class="btn-primary" type="button" title="Włącz tryb spaceru z awatarem 1.80 m">
-        🚶 Spacer TPP
-      </button>
-      <button id="btn-autopilot-header" class="btn-secondary" type="button" title="Automatyczna prezentacja budynku po punktach trasy [P]">
-        🎬 Autopilot
-      </button>
-      <button id="btn-measure-tool" class="btn-secondary" type="button" title="Miarka inżynieryjna 3D (kliknij 2 punkty na modelu)">
-        📏 Miarka 3D
-      </button>
-      <button id="btn-open-archive" class="btn-gold" type="button" title="Otwórz operat inwentaryzacyjny z 1966 r., obliczenia statyczne z 1955 r. i tabelę porównawczą">
-        📜 Operat 1966
-      </button>
-      <div class="header-divider" aria-hidden="true"></div>
-      <button id="btn-zen-mode" class="btn-secondary" type="button" title="Zwiń wszystkie menu, aby swobodnie obracać i analizować czystą bryłę 3D (Klawisz H)">
-        👁️ Ukryj menu <kbd>H</kbd>
-      </button>
-      <button id="btn-fullscreen" class="btn-secondary" type="button" title="Tryb pełnoekranowy z czystą bryłą 3D (Klawisz F)">
-        ⛶ Pełny ekran <kbd>F</kbd>
-      </button>
-      <button id="btn-lock-app" class="btn-icon" type="button" title="Zablokuj aplikację (wymagaj ponownie kodu PIN)">🔒</button>
-      <button id="btn-collapse-top" class="btn-icon" type="button" title="Zwiń górny pasek nagłówka">▲</button>
-    </div>
+      <div class="menu-wrap">
+        <button id="btn-more-menu" class="btn-icon btn-more" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="more-menu" title="Więcej">⋯</button>
+        <div id="more-menu" class="dropdown-menu glass-panel hidden">
+          <button id="btn-autopilot-header" class="menu-item" type="button">🎬 Autopilot zwiedzania <kbd>P</kbd></button>
+          <button id="btn-zen-mode" class="menu-item desktop-only" type="button">👁️ Ukryj panele <kbd>H</kbd></button>
+          <button id="btn-fullscreen" class="menu-item" type="button">⛶ Pełny ekran <kbd>F</kbd></button>
+          <button id="btn-collapse-top" class="menu-item desktop-only" type="button">▲ Zwiń nagłówek</button>
+          <div class="menu-sep" role="separator"></div>
+          <button id="btn-lock-app" class="menu-item" type="button">🔒 Zablokuj (wymagaj PIN)</button>
+        </div>
+      </div>
+    </nav>
   </header>
 
-  <!-- Lewy Panel: Inżynieria, Warstwy, Eksplozja, Przekroje, Warianty Historyczne -->
-  <aside id="left-sidebar" class="sidebar-left glass-panel">
+  <!-- Lewy panel: Model (kondygnacje, wariant, warstwy, przekroje) -->
+  <aside id="left-sidebar" class="sidebar-left glass-panel" aria-label="Model">
     <div class="panel-header">
-      <h2>INSPEKCJA KONSTRUKCJI</h2>
-      <div class="panel-header-actions">
-        <button id="btn-fold-all-left" class="btn-icon" type="button" title="Zwiń/rozwiń wszystkie sekcje wewnątrz panelu">⊟</button>
-        <button id="btn-collapse-left" class="btn-icon" type="button" title="Ukryj lewy panel boczny (Klawisz [)">◀</button>
-      </div>
+      <h2>Model</h2>
+      <button id="btn-collapse-left" class="btn-icon" type="button" title="Ukryj panel ([)" aria-label="Ukryj panel modelu">✕</button>
     </div>
 
     <div class="panel-body">
-      <!-- Tryb bryły i epoki -->
+      <!-- Selektor kondygnacji – szczegóły wybranego poziomu pojawiają się w prawym panelu -->
+      <section class="control-group level-group">
+        <span class="group-title">Kondygnacja</span>
+        <div id="level-picker" class="level-picker" role="radiogroup" aria-label="Wybór kondygnacji">
+          <!-- Generowane przez UIManager.js z levelsSpec.js -->
+        </div>
+      </section>
+
+      <!-- Wariant bryły i epoki -->
       <section class="control-group" data-collapsible-section>
         <div class="group-title-row section-toggle-header">
-          <span class="group-title">KONFIGURACJA BRYŁY I EPOKI</span>
-          <button class="btn-section-fold" type="button" title="Zwiń/rozwiń sekcję">▾</button>
+          <span class="group-title">Wariant</span>
+          <button class="btn-section-fold" type="button" aria-label="Zwiń / rozwiń sekcję">▾</button>
         </div>
         <div class="section-body">
-          <div class="segmented-control" role="group" aria-label="Tryb segmentu">
-            <button id="btn-mode-single" class="seg-btn active" type="button">Segment B (Północny)</button>
-            <button id="btn-mode-twin" class="seg-btn" type="button">Cały Bliźniak (A+B)</button>
+          <div class="segmented-control" role="group" aria-label="Zakres modelu">
+            <button id="btn-mode-single" class="seg-btn active" type="button" title="Tylko segment północny (B)">Segment B</button>
+            <button id="btn-mode-twin" class="seg-btn" type="button" title="Cały bliźniak (A+B)">Bliźniak A+B</button>
           </div>
           <div class="segmented-control mt-6" role="group" aria-label="Stan historyczny">
-            <button id="btn-era-1966" class="seg-btn active" type="button" title="Stan wg inwentaryzacji 1966 r. i pomiarów 2026 (z werandą i drugim garażem)">1966 / 2026 (Z werandą)</button>
-            <button id="btn-era-1955" class="seg-btn" type="button" title="Projekt pierwotny z 1955 r. (otwarty taras parteru, kubatura 533 m³)">1955 (Projekt pierwotny)</button>
+            <button id="btn-era-1966" class="seg-btn active" type="button" title="Stan wg inwentaryzacji 1966 r. i pomiarów 2026 (z werandą i drugim garażem)">Stan 1966/2026</button>
+            <button id="btn-era-1955" class="seg-btn" type="button" title="Projekt pierwotny z 1955 r. (otwarty taras parteru, kubatura 533 m³)">Projekt 1955</button>
           </div>
         </div>
       </section>
 
-      <!-- Suwak Exploded View -->
-      <section class="control-group" data-collapsible-section>
+      <!-- Warstwy modelu -->
+      <section class="control-group section-folded" data-collapsible-section>
+        <div class="group-title-row section-toggle-header">
+          <span class="group-title">Warstwy</span>
+          <button class="btn-section-fold" type="button" aria-label="Zwiń / rozwiń sekcję">▸</button>
+        </div>
+        <div class="section-body">
+          <div class="layers-grid">
+            <label class="layer-toggle"><input type="checkbox" data-layer="roofCover" checked /><span class="toggle-box"></span><span class="toggle-name">Pokrycie dachu</span></label>
+            <label class="layer-toggle"><input type="checkbox" data-layer="roofTruss" checked /><span class="toggle-box"></span><span class="toggle-name">Więźba i komin</span></label>
+            <label class="layer-toggle"><input type="checkbox" data-layer="atticWalls" checked /><span class="toggle-box"></span><span class="toggle-name">Poddasze</span></label>
+            <label class="layer-toggle"><input type="checkbox" data-layer="firstFloor" checked /><span class="toggle-box"></span><span class="toggle-name">I piętro i taras</span></label>
+            <label class="layer-toggle"><input type="checkbox" data-layer="groundFloor" checked /><span class="toggle-box"></span><span class="toggle-name">Parter, weranda, schody</span></label>
+            <label class="layer-toggle"><input type="checkbox" data-layer="kleinSlabs" checked /><span class="toggle-box"></span><span class="toggle-name">Stropy Kleina</span></label>
+            <label class="layer-toggle"><input type="checkbox" data-layer="basement" checked /><span class="toggle-box"></span><span class="toggle-name">Podziemie i fundamenty</span></label>
+            <label class="layer-toggle"><input type="checkbox" data-layer="interiors" checked /><span class="toggle-box"></span><span class="toggle-name">Wyposażenie wnętrz</span></label>
+            <label class="layer-toggle"><input type="checkbox" data-layer="vines" checked /><span class="toggle-box"></span><span class="toggle-name">Winorośl</span></label>
+            <label class="layer-toggle"><input type="checkbox" data-layer="utilityPole" checked /><span class="toggle-box"></span><span class="toggle-name">Słup energetyczny</span></label>
+            <label class="layer-toggle"><input type="checkbox" data-layer="surroundings" checked /><span class="toggle-box"></span><span class="toggle-name">Działka i otoczenie</span></label>
+            <label class="layer-toggle"><input type="checkbox" data-layer="dimensions" /><span class="toggle-box"></span><span class="toggle-name">Wymiary działki</span></label>
+          </div>
+          <button id="btn-xray-klein" class="btn-mini btn-block mt-8" type="button" title="Prześwietl ściany, aby wyeksponować stalowy ruszt stropów Kleina i więźbę">🔍 Rentgen konstrukcji</button>
+        </div>
+      </section>
+
+      <!-- Rozstrzelenie kondygnacji -->
+      <section class="control-group section-folded" data-collapsible-section>
         <div class="slider-header section-toggle-header">
-          <span class="group-title">ROZSTRZELENIE KONDYGNACJI (EXPLODED)</span>
+          <span class="group-title">Rozstrzelenie</span>
           <div class="header-inline-right">
             <span id="val-explode" class="mono-badge">0%</span>
-            <button class="btn-section-fold" type="button" title="Zwiń/rozwiń sekcję">▾</button>
+            <button class="btn-section-fold" type="button" aria-label="Zwiń / rozwiń sekcję">▸</button>
           </div>
         </div>
         <div class="section-body">
-          <input id="slider-explode" type="range" min="0" max="100" value="0" step="1" class="arch-slider" />
+          <input id="slider-explode" type="range" min="0" max="100" value="0" step="1" class="arch-slider" aria-label="Rozstrzelenie kondygnacji" />
           <div class="slider-quick-btns">
-            <button class="btn-mini" data-explode="0" type="button">Złożony (0%)</button>
-            <button class="btn-mini" data-explode="45" type="button">Inspekcja Kleina (45%)</button>
-            <button class="btn-mini" data-explode="100" type="button">Pełna eksplozja (100%)</button>
+            <button class="btn-mini" data-explode="0" type="button">Złożony</button>
+            <button class="btn-mini" data-explode="45" type="button" title="Odsłania stropy Kleina">Stropy</button>
+            <button class="btn-mini" data-explode="100" type="button">Pełne</button>
           </div>
         </div>
       </section>
 
       <!-- Przekroje dynamiczne Clipping Planes -->
-      <section class="control-group" data-collapsible-section>
+      <section class="control-group section-folded" data-collapsible-section>
         <div class="group-title-row section-toggle-header">
-          <span class="group-title">PRZEKROJE DYNAMICZNE (CLIPPING)</span>
-          <div class="header-inline-right">
-            <button id="btn-reset-cuts" class="btn-mini" type="button">Reset cięć</button>
-            <button class="btn-section-fold" type="button" title="Zwiń/rozwiń sekcję">▾</button>
-          </div>
+          <span class="group-title">Przekroje</span>
+          <button class="btn-section-fold" type="button" aria-label="Zwiń / rozwiń sekcję">▸</button>
         </div>
-
         <div class="section-body">
           <div class="cut-control">
             <div class="cut-label-row">
-              <label for="slider-cut-y">Poziomy Y (Rzuty kondygnacji)</label>
+              <label for="slider-cut-y">Poziomy (wysokość)</label>
               <span id="val-cut-y" class="mono-badge">WYŁ.</span>
             </div>
             <input id="slider-cut-y" type="range" min="-1.2" max="11.5" value="11.5" step="0.05" class="arch-slider" />
-            <div class="slider-quick-btns">
-              <button class="btn-mini" data-cut-y="0.5" type="button">Piwnica</button>
-              <button class="btn-mini" data-cut-y="2.9" type="button">Parter</button>
-              <button class="btn-mini" data-cut-y="5.9" type="button">I Piętro</button>
-              <button class="btn-mini" data-cut-y="8.6" type="button">Poddasze</button>
-              <button class="btn-mini" data-cut-y="11.5" type="button">Pełny</button>
-            </div>
           </div>
-
           <div class="cut-control mt-8">
             <div class="cut-label-row">
-              <label for="slider-cut-x">Poprzeczny X (Wschód ↔ Zachód)</label>
+              <label for="slider-cut-x">Poprzeczny (wschód ↔ zachód)</label>
               <span id="val-cut-x" class="mono-badge">WYŁ.</span>
             </div>
             <input id="slider-cut-x" type="range" min="-9.0" max="6.5" value="6.5" step="0.05" class="arch-slider" />
           </div>
-
           <div class="cut-control mt-8">
             <div class="cut-label-row">
-              <label for="slider-cut-z">Podłużny Z (Północ ↔ Południe)</label>
+              <label for="slider-cut-z">Podłużny (północ ↔ południe)</label>
               <span id="val-cut-z" class="mono-badge">WYŁ.</span>
             </div>
             <input id="slider-cut-z" type="range" min="-7.8" max="6.5" value="-7.8" step="0.05" class="arch-slider" />
           </div>
-        </div>
-      </section>
-
-      <!-- Warstwy modelu (Layers) -->
-      <section class="control-group" data-collapsible-section>
-        <div class="group-title-row section-toggle-header">
-          <span class="group-title">WARSTWY ELEMENTÓW (LAYERS)</span>
-          <div class="header-inline-right">
-            <button id="btn-xray-klein" class="btn-mini gold-text" type="button" title="Prześwietl ściany, aby wyeksponować stalowy ruszt stropów Kleina i więźbę">🔍 Rentgen Kleina</button>
-            <button class="btn-section-fold" type="button" title="Zwiń/rozwiń sekcję">▾</button>
-          </div>
-        </div>
-
-        <div class="section-body">
-          <div class="layers-grid">
-            <label class="layer-toggle">
-              <input type="checkbox" data-layer="roofCover" checked />
-              <span class="toggle-box"></span>
-              <span class="toggle-name">Pokrycie dachu (Karpiówka + lukarny)</span>
-            </label>
-            <label class="layer-toggle">
-              <input type="checkbox" data-layer="roofTruss" checked />
-              <span class="toggle-box"></span>
-              <span class="toggle-name">Więźba stolcowo-kleszczowa + komin</span>
-            </label>
-            <label class="layer-toggle">
-              <input type="checkbox" data-layer="atticWalls" checked />
-              <span class="toggle-box"></span>
-              <span class="toggle-name">Ścianki poddasza (Piętro 2: 37+13 m²)</span>
-            </label>
-            <label class="layer-toggle">
-              <input type="checkbox" data-layer="firstFloor" checked />
-              <span class="toggle-box"></span>
-              <span class="toggle-name">I Piętro (+4.70 m) i Taras (15,9 m²)</span>
-            </label>
-            <label class="layer-toggle">
-              <input type="checkbox" data-layer="groundFloor" checked />
-              <span class="toggle-box"></span>
-              <span class="toggle-name">Parter (+1.60 m), Weranda i Schody</span>
-            </label>
-            <label class="layer-toggle">
-              <input type="checkbox" data-layer="kleinSlabs" checked />
-              <span class="toggle-box"></span>
-              <span class="toggle-name">Stropy Kleina (Belki I NP 24/22/18/14)</span>
-            </label>
-            <label class="layer-toggle">
-              <input type="checkbox" data-layer="basement" checked />
-              <span class="toggle-box"></span>
-              <span class="toggle-name">Podziemie (-0.92 m), Garaże i Ławy</span>
-            </label>
-            <label class="layer-toggle">
-              <input type="checkbox" data-layer="interiors" checked />
-              <span class="toggle-box"></span>
-              <span class="toggle-name">Wyposażenie, boazeria i kotłownia</span>
-            </label>
-            <label class="layer-toggle">
-              <input type="checkbox" data-layer="vines" checked />
-              <span class="toggle-box"></span>
-              <span class="toggle-name">Winorośl ogrodowa na werandzie</span>
-            </label>
-            <label class="layer-toggle">
-              <input type="checkbox" data-layer="utilityPole" checked />
-              <span class="toggle-box"></span>
-              <span class="toggle-name">Słup energetyczny ŻN (do demontażu)</span>
-            </label>
-            <label class="layer-toggle">
-              <input type="checkbox" data-layer="surroundings" checked />
-              <span class="toggle-box"></span>
-              <span class="toggle-name">Działka 387 m², ulica frontowa i ogród</span>
-            </label>
-            <label class="layer-toggle">
-              <input type="checkbox" data-layer="dimensions" />
-              <span class="toggle-box"></span>
-              <span class="toggle-name">Linie wymiarowe działki 3D</span>
-            </label>
-          </div>
+          <button id="btn-reset-cuts" class="btn-mini btn-block mt-8" type="button">Wyłącz wszystkie przekroje</button>
         </div>
       </section>
 
       <!-- Heliodon / Oświetlenie słoneczne -->
-      <section class="control-group" data-collapsible-section>
+      <section class="control-group section-folded" data-collapsible-section>
         <div class="slider-header section-toggle-header">
-          <span class="group-title">HELIODON (EKSPOZYCJA SŁONECZNA)</span>
+          <span class="group-title">Słońce</span>
           <div class="header-inline-right">
-            <span id="val-sun-time" class="mono-badge">14:30 (Zachód/Ogród)</span>
-            <button class="btn-section-fold" type="button" title="Zwiń/rozwiń sekcję">▾</button>
+            <span id="val-sun-time" class="mono-badge">14:30</span>
+            <button class="btn-section-fold" type="button" aria-label="Zwiń / rozwiń sekcję">▸</button>
           </div>
         </div>
         <div class="section-body">
-          <input id="slider-sun-time" type="range" min="6" max="20" value="14.5" step="0.25" class="arch-slider" />
+          <input id="slider-sun-time" type="range" min="6" max="20" value="14.5" step="0.25" class="arch-slider" aria-label="Godzina (pozycja słońca)" />
+          <div class="slider-scale"><span>6:00 · ulica</span><span>20:00 · ogród</span></div>
         </div>
       </section>
     </div>
   </aside>
 
-  <!-- Prawy Panel: Presety Kamery, Karta Inspekcji Pomieszczenia i Narzędzie Miarki -->
-  <aside id="right-sidebar" class="sidebar-right">
-    <!-- Presety Kamery -->
-    <div id="camera-card" class="glass-panel camera-card" data-collapsible-section>
-      <div class="group-title-row section-toggle-header">
-        <span class="group-title">WIDOKI ARCHITEKTONICZNE (KAMERA)</span>
-        <div class="header-inline-right">
-          <button id="btn-autorotate-cam" class="btn-mini" type="button" title="Automatyczny obrót 360° wokół budynku (Klawisz O)">🔄 360°</button>
-          <button class="btn-section-fold" type="button" title="Zwiń/rozwiń kartę widoków kamery">▾</button>
-          <button id="btn-collapse-right" class="btn-icon" type="button" title="Ukryj cały prawy panel (Klawisz ])">▶</button>
-        </div>
-      </div>
-      <div class="section-body">
-        <div class="camera-presets-grid">
-          <button class="btn-cam active" data-cam="iso" type="button">📐 Aksonometria ISO</button>
-          <button class="btn-cam" data-cam="east" type="button">🏛️ Ulica (Wschód)</button>
-          <button class="btn-cam" data-cam="west" type="button">🌿 Ogród (Zachód)</button>
-          <button class="btn-cam" data-cam="north" type="button">🚪 Wejście (Północ)</button>
-          <button class="btn-cam" data-cam="top" type="button">🗺️ Rzut z góry (Top)</button>
-          <button class="btn-cam" data-cam="section" type="button">🔪 Przekrój 1966</button>
-          <button class="btn-cam" data-cam="stairs" type="button">🪜 Schody zabiegowe</button>
-          <button class="btn-cam" data-cam="boiler" type="button">🔥 Kotłownia (-1)</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Karta Inspekcji Pomieszczenia (Raycasting) -->
-    <div id="room-inspector-card" class="glass-panel inspector-card" data-collapsible-section>
-      <div class="inspector-header section-toggle-header">
-        <div>
-          <span id="insp-floor-badge" class="hud-badge gold">PARTER (±0.00)</span>
-          <h3 id="insp-room-name">Salon (Pokój dzienny)</h3>
-        </div>
-        <div class="header-inline-right">
-          <span id="insp-room-code" class="mono-code">P0-01</span>
-          <button class="btn-section-fold" type="button" title="Zwiń/rozwiń kartę inspekcji pomieszczenia">▾</button>
-        </div>
+  <!-- Prawy panel: Szczegóły wybranej kondygnacji / pomieszczenia + Miarka -->
+  <aside id="right-sidebar" class="sidebar-right" aria-label="Szczegóły">
+    <section id="details-card" class="glass-panel details-card" aria-live="polite">
+      <div class="details-topbar">
+        <button id="btn-details-back" class="details-back hidden" type="button">‹ <span id="details-back-label">Parter</span></button>
+        <span id="details-eyebrow" class="details-eyebrow">Budynek</span>
+        <button id="btn-collapse-right" class="btn-icon" type="button" title="Ukryj panel (])" aria-label="Ukryj panel szczegółów">✕</button>
       </div>
 
-      <div class="section-body">
-        <div class="inspector-metrics">
-          <div class="insp-stat">
-            <span class="insp-stat-label">Inwentaryzacja 1966</span>
-            <strong id="insp-area-1966" class="insp-stat-val gold-text">21,96 m²</strong>
+      <!-- Widok kondygnacji / całego budynku (renderowany przez UIManager.js) -->
+      <div id="details-level-view" class="details-view"></div>
+
+      <!-- Widok pomieszczenia (Raycasting / lista pomieszczeń) -->
+      <div id="details-room-view" class="details-view hidden">
+        <div class="details-title-block">
+          <span id="insp-floor-badge" class="chip">Parter</span>
+          <h3 id="insp-room-name" class="details-title">Salon</h3>
+          <span id="insp-room-code" class="mono-code">P0.06</span>
+        </div>
+
+        <div class="stat-grid">
+          <div class="stat">
+            <span class="stat-label">Skan 2026</span>
+            <strong id="insp-area-2026" class="stat-val gold-text">21,80 m²</strong>
           </div>
-          <div class="insp-stat">
-            <span class="insp-stat-label">Pomiar laserowy 3D</span>
-            <strong id="insp-area-2026" class="insp-stat-val">21,80 m²</strong>
+          <div class="stat">
+            <span class="stat-label">Operat 1966</span>
+            <strong id="insp-area-1966" class="stat-val">21,96 m²</strong>
           </div>
-          <div class="insp-stat">
-            <span class="insp-stat-label">Projekt 1955</span>
-            <strong id="insp-area-1955" class="insp-stat-val muted">22,00 m²</strong>
+          <div class="stat">
+            <span class="stat-label">Projekt 1955</span>
+            <strong id="insp-area-1955" class="stat-val muted">22,00 m²</strong>
           </div>
         </div>
 
-        <div class="inspector-details">
-          <div class="detail-row">
-            <span>Wymiary w świetle:</span>
-            <strong id="insp-dims" class="mono-text">5,56 × 3,95 m (h = 2,80 m)</strong>
-          </div>
-          <div class="detail-row">
-            <span>Rzędna posadzki:</span>
-            <strong id="insp-elev" class="mono-text">Y = +1,60 m (±0,00 proj.)</strong>
-          </div>
-          <div class="detail-row">
-            <span>Posadzka (1955/1966):</span>
-            <strong id="insp-floor-mat">Klepka dębowa w jodełkę na ślepej podłodze</strong>
-          </div>
-          <div class="detail-row">
-            <span>Strop nad pomieszczeniem:</span>
-            <strong id="insp-ceiling-mat">Strop Kleina (I NP 22/24 co 1,25 m + cegła)</strong>
-          </div>
-        </div>
+        <dl class="fact-list">
+          <div class="fact"><dt>Wymiary w świetle</dt><dd id="insp-dims" class="mono-text">5,56 × 3,95 m (h = 2,80 m)</dd></div>
+          <div class="fact"><dt>Rzędna posadzki</dt><dd id="insp-elev" class="mono-text">±0,00 (Y +1,60 m)</dd></div>
+          <div class="fact"><dt>Posadzka</dt><dd id="insp-floor-mat">Klepka dębowa w jodełkę</dd></div>
+          <div class="fact"><dt>Strop</dt><dd id="insp-ceiling-mat">Strop Kleina</dd></div>
+        </dl>
 
-        <p id="insp-description" class="insp-desc">
-          Główny salon traktu ogrodowego z szerokim dwuskrzydłowym przejściem z holu, oknem północnym i wyjściem na oszkloną werandę zachodnią. Kliknij dowolne pomieszczenie w modelu 3D, aby zbadać jego metrykę.
-        </p>
+        <p id="insp-description" class="details-desc"></p>
 
-        <div class="inspector-actions">
-          <button id="btn-teleport-room" class="btn-secondary btn-full" type="button">
-            🎯 Przenieś awatara / kamerę do tego pomieszczenia
-          </button>
-        </div>
+        <button id="btn-teleport-room" class="btn-secondary btn-full" type="button">🎯 Pokaż w 3D</button>
       </div>
-    </div>
+    </section>
 
     <!-- Karta Miarki 3D (widoczna po włączeniu pomiaru) -->
-    <div id="measure-card" class="glass-panel measure-card hidden">
-      <div class="inspector-header">
-        <span class="hud-badge gold">MIARKA INŻYNIERYJNA 3D</span>
+    <section id="measure-card" class="glass-panel measure-card hidden">
+      <div class="details-topbar">
+        <span class="details-eyebrow">Miarka 3D</span>
         <button id="btn-clear-measure" class="btn-mini" type="button">Wyczyść</button>
       </div>
       <p id="measure-status" class="measure-text">Kliknij pierwszy punkt na dowolnym elemencie budynku...</p>
       <div id="measure-result" class="measure-result">0,00 m</div>
       <div id="measure-deltas" class="measure-deltas mono-text">ΔX: 0.00 m | ΔY: 0.00 m | ΔZ: 0.00 m</div>
-    </div>
+    </section>
   </aside>
 
-  <!-- Dolny pasek szybkiego wyboru pomieszczeń i róży wiatrów -->
-  <footer id="bottom-bar" class="bottom-bar glass-panel">
-    <div class="compass-widget" title="Orientacja geodezyjna: Wschód (+X) = Ulica, Zachód (-X) = Ogród, Północ (-Z) = Wejście, Południe (+Z) = Dylatacja">
-      <div id="compass-rose" class="compass-rose">
-        <span class="c-dir c-n">N (Wejście)</span>
-        <span class="c-dir c-e">E (Ulica)</span>
-        <span class="c-dir c-s">S (Bliźniak)</span>
-        <span class="c-dir c-w">W (Ogród)</span>
-      </div>
+  <!-- Dolny pasek: widoki kamery -->
+  <footer id="bottom-bar" class="bottom-bar glass-panel" aria-label="Widoki kamery">
+    <span class="bar-label">Widok</span>
+    <div class="camera-strip" role="group" aria-label="Presety kamery">
+      <button class="btn-cam active" data-cam="iso" type="button" title="Aksonometria ISO">📐 ISO</button>
+      <button class="btn-cam" data-cam="east" type="button" title="Elewacja wschodnia – od ulicy">🏛️ Ulica</button>
+      <button class="btn-cam" data-cam="west" type="button" title="Elewacja zachodnia – od ogrodu">🌿 Ogród</button>
+      <button class="btn-cam" data-cam="north" type="button" title="Elewacja północna – wejście">🚪 Wejście</button>
+      <button class="btn-cam" data-cam="top" type="button" title="Rzut z góry">🗺️ Z góry</button>
+      <button class="btn-cam" data-cam="section" type="button" title="Przekrój jak w operacie 1966">🔪 Przekrój</button>
+      <button class="btn-cam" data-cam="stairs" type="button" title="Schody zabiegowe">🪜 Schody</button>
+      <button class="btn-cam" data-cam="boiler" type="button" title="Kotłownia w podziemiu">🔥 Kotłownia</button>
+      <button id="btn-autorotate-cam" class="btn-cam" type="button" title="Automatyczny obrót 360° (O)">🔄 360°</button>
     </div>
-    <div id="room-pills-bar" class="room-pills-bar" aria-label="Szybki wybór pomieszczenia">
-      <!-- Generowane dynamicznie z houseSpec.js -->
-    </div>
-    <button id="btn-collapse-bottom" class="btn-icon" type="button" title="Zwiń dolny pasek pomieszczeń">▼</button>
+    <button id="btn-collapse-bottom" class="btn-icon" type="button" title="Zwiń pasek widoków" aria-label="Zwiń pasek widoków">✕</button>
   </footer>
+
+  <!-- Dolna nawigacja (tylko telefon): przełącza panele jako wysuwane arkusze -->
+  <nav id="mobile-nav" class="mobile-nav glass-panel" aria-label="Panele">
+    <button class="mnav-btn" data-sheet="left" type="button" aria-pressed="false"><span aria-hidden="true">🏢</span><span>Model</span></button>
+    <button class="mnav-btn" data-sheet="right" type="button" aria-pressed="false"><span aria-hidden="true">ℹ️</span><span>Szczegóły</span></button>
+    <button class="mnav-btn" data-sheet="bottom" type="button" aria-pressed="false"><span aria-hidden="true">🎥</span><span>Widoki</span></button>
+  </nav>
 
   <!-- Modal Dokumentacji Archiwalnej 1955 / 1966 / 2026 -->
   <dialog id="archive-modal" class="archive-dialog">

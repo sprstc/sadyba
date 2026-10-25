@@ -60,58 +60,59 @@ export class SurroundingsBuilder {
     const m = this.materials;
     const signZ = isSouthTwin ? -1 : 1;
 
-    // 1. Trawnik ogrodowy z wycięciem pod budynek i zjazd garażowy
-    // Część zachodnia (ogród tylny: X od -19.63 do -5.50, Z od 0 do -10.52)
+    // 1. Trawnik ogrodowy z wycięciem pod budynek, werandę (pomieszczenie użytkowe w podziemiu) i zjazd garażowy
+    // Część zachodnia za werandą (ogród tylny: X od -19.63 do -8.20, Z od 0 do -10.52)
     const backLawn = new THREE.Mesh(
-      new THREE.BoxGeometry(14.13, 0.16, 10.52),
+      new THREE.BoxGeometry(11.43, 0.16, 10.52),
       m.get('grass')
     );
-    backLawn.position.set(-12.565, -0.08, signZ * -5.26);
+    backLawn.position.set(-13.915, -0.08, signZ * -5.26);
     backLawn.receiveShadow = true;
     group.add(backLawn);
 
-    // Pas boczny północny (X od -5.50 do +10.50, Z od -6.08 do -10.52 -> szer. 4.44 m)
+    // Pas boczny północny (X od -8.20 do +10.50, Z od -6.08 do -10.52 -> szer. 4.44 m)
     const sideLawn = new THREE.Mesh(
-      new THREE.BoxGeometry(16.00, 0.16, 4.44),
+      new THREE.BoxGeometry(18.70, 0.16, 4.44),
       m.get('grass')
     );
-    sideLawn.position.set(2.50, -0.08, signZ * -8.30);
+    sideLawn.position.set(1.15, -0.08, signZ * -8.30);
     sideLawn.receiveShadow = true;
     group.add(sideLawn);
 
-    // Przedogródek północny (obok zjazdu garażowego: X od +5.50 do +10.50, Z od -3.25 do -6.08)
+    // Przedogródek przed kotłownią (przy osi dylatacji: X od +5.50 do +10.50, Z od 0.00 do -2.70)
     const frontLawn = new THREE.Mesh(
-      new THREE.BoxGeometry(5.00, 0.16, 2.83),
+      new THREE.BoxGeometry(5.00, 0.16, 2.70),
       m.get('grass')
     );
-    frontLawn.position.set(8.00, -0.08, signZ * -4.665);
+    frontLawn.position.set(8.00, -0.08, signZ * -1.35);
     frontLawn.receiveShadow = true;
     group.add(frontLawn);
 
-    // Wąski pas przy osi dylatacji (X od +5.50 do +10.50, Z od 0 do -0.35)
-    const centerStrip = new THREE.Mesh(
-      new THREE.BoxGeometry(5.00, 0.16, 0.35),
+    // Wąski pas przedogródka przy narożniku NE obok zjazdu (X od +5.50 do +10.50, Z od -5.60 do -6.08)
+    const northFrontStrip = new THREE.Mesh(
+      new THREE.BoxGeometry(5.00, 0.16, 0.48),
       m.get('grass')
     );
-    centerStrip.position.set(8.00, -0.08, signZ * -0.175);
-    centerStrip.receiveShadow = true;
-    group.add(centerStrip);
+    northFrontStrip.position.set(8.00, -0.08, signZ * -5.84);
+    northFrontStrip.receiveShadow = true;
+    group.add(northFrontStrip);
 
-    // 2. ZJAZD DO GARAŻU (X od +10.50 na Y=0.00 w dół do X=+5.50 na Y=-0.92, Z in [-3.25, -0.35])
+    // 2. ZJAZD DO GARAŻU (X od +10.50 na Y=0.00 w dół do X=+5.50 na Y=-0.92, Z in [-5.60, -2.70], oś Z = -4.15 m)
+    // Zjazd prowadzi bezpośrednio do bramy Garażu I (19,95 m²), a nie do kotłowni!
     const rampLength = Math.hypot(5.00, 0.92);
     const rampAngle = Math.atan2(0.92, 5.00); // nachylenie ok. 10.4°
     const rampMesh = new THREE.Mesh(
       new THREE.BoxGeometry(rampLength, 0.14, 2.90),
       m.get('asphalt')
     );
-    rampMesh.position.set(8.00, -0.46 - 0.05, signZ * -1.80);
+    rampMesh.position.set(8.00, -0.46 - 0.05, signZ * -4.15);
     rampMesh.rotation.z = rampAngle;
     rampMesh.receiveShadow = true;
     rampMesh.name = 'Zjazd do garażu (5.00 m)';
     group.add(rampMesh);
 
-    // Mury oporowe boczne zjazdu do garażu
-    for (const zWall of [-0.35, -3.25]) {
+    // Mury oporowe boczne zjazdu do garażu (Z = -2.70 i Z = -5.60)
+    for (const zWall of [-2.70, -5.60]) {
       const wall = new THREE.Mesh(
         new THREE.BoxGeometry(5.00, 1.15, 0.22),
         m.get('concrete')
@@ -130,12 +131,12 @@ export class SurroundingsBuilder {
       group.add(cap);
     }
 
-    // Kratka ściekowa liniowa przed bramą garażową (X = +5.68, Y = -0.91)
+    // Kratka ściekowa liniowa przed bramą garażową (X = +5.68, Y = -0.91, Z = -4.15)
     const drain = new THREE.Mesh(
       new THREE.BoxGeometry(0.22, 0.03, 2.60),
       m.get('steelBeam')
     );
-    drain.position.set(5.68, -0.91, signZ * -1.80);
+    drain.position.set(5.68, -0.91, signZ * -4.15);
     group.add(drain);
 
     // 3. Chodnik wejściowy od furtki (X = +10.50, Z = -7.35) do schodów ganku północnego
@@ -147,13 +148,13 @@ export class SurroundingsBuilder {
     pathFront.receiveShadow = true;
     group.add(pathFront);
 
-    // 4. Historyczne 3 kręgi szamba ("SZAMBO OOO" z planu sytuacyjnego 1966 r.) w przedogródku
+    // 4. Historyczne 3 kręgi szamba ("SZAMBO OOO" z planu sytuacyjnego 1966 r.) w przedogródku przed kotłownią
     for (let i = 0; i < 3; i++) {
       const ring = new THREE.Mesh(
         new THREE.CylinderGeometry(0.42, 0.42, 0.08, 18),
         m.get('concrete')
       );
-      ring.position.set(7.20 + i * 0.95, 0.03, signZ * -4.75);
+      ring.position.set(7.20 + i * 0.95, 0.03, signZ * -1.35);
       ring.receiveShadow = true;
       ring.name = 'Krąg betonowy (SZAMBO 1966)';
       group.add(ring);
@@ -175,9 +176,10 @@ export class SurroundingsBuilder {
     const m = this.materials;
     const xFence = 10.50;
 
-    // Cokół pod przęsłami (poza bramą wjazdową i furtką)
+    // Cokół pod przęsłami (poza bramą wjazdową Z in [-5.60, -2.70] i furtką Z in [-8.00, -6.70])
     const plinthSegments = [
-      { z1: -3.35, z2: -6.70 },
+      { z1: -0.05, z2: -2.70 },
+      { z1: -5.60, z2: -6.70 },
       { z1: -8.00, z2: -10.52 },
     ];
 
@@ -203,7 +205,7 @@ export class SurroundingsBuilder {
     }
 
     // Słupki ogrodzeniowe
-    const postZs = [-0.35, -3.35, -5.00, -6.70, -8.00, -10.50];
+    const postZs = [-0.05, -2.70, -5.60, -6.70, -8.00, -10.50];
     for (const zp of postZs) {
       const post = new THREE.Mesh(
         new THREE.CylinderGeometry(0.05, 0.05, 1.60, 10),
@@ -214,10 +216,10 @@ export class SurroundingsBuilder {
       group.add(post);
     }
 
-    // Dwuskrzydłowa brama wjazdowa nad zjazdem (Z od -0.35 do -3.35)
-    for (const gateZ of [-1.10, -2.60]) {
+    // Dwuskrzydłowa brama wjazdowa nad zjazdem do Garażu I (Z od -2.70 do -5.60, oś Z = -4.15 m)
+    for (const gateZ of [-3.42, -4.88]) {
       const gateFrame = new THREE.Mesh(
-        new THREE.BoxGeometry(0.05, 1.35, 1.42),
+        new THREE.BoxGeometry(0.05, 1.35, 1.38),
         m.get('steelRailing')
       );
       gateFrame.position.set(xFence, 0.72, signZ * gateZ);
@@ -249,57 +251,10 @@ export class SurroundingsBuilder {
   }
 
   /**
-   * Drzewa liściaste, krzewy i tuje w ogrodzie
+   * Zieleń ogrodowa (duże drzewa zostały usunięte, aby nie zasłaniać bryły budynku od strony ogrodu)
    */
   buildGardenVegetation(group, signZ) {
-    const m = this.materials;
-
-    const createTree = (x, z, height = 6.5, crownRadius = 2.4) => {
-      const tree = new THREE.Group();
-      const trunk = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.16, 0.24, height * 0.48, 10),
-        m.get('oakWood')
-      );
-      trunk.position.y = (height * 0.48) / 2;
-      trunk.castShadow = true;
-      tree.add(trunk);
-
-      const crown1 = new THREE.Mesh(
-        new THREE.DodecahedronGeometry(crownRadius, 1),
-        m.get('foliage')
-      );
-      crown1.position.y = height * 0.65;
-      crown1.castShadow = true;
-      crown1.receiveShadow = true;
-      tree.add(crown1);
-
-      const crown2 = new THREE.Mesh(
-        new THREE.DodecahedronGeometry(crownRadius * 0.75, 1),
-        m.get('foliage')
-      );
-      crown2.position.set(crownRadius * 0.45, height * 0.55, crownRadius * 0.3);
-      crown2.castShadow = true;
-      tree.add(crown2);
-
-      tree.position.set(x, 0, signZ * z);
-      return tree;
-    };
-
-    // Drzewa w ogrodzie zachodnim i przy ulicy
-    group.add(createTree(-14.2, -3.5, 7.2, 2.5));
-    group.add(createTree(-16.8, -7.8, 6.0, 2.1));
-    group.add(createTree(8.4, -9.1, 5.8, 1.9));
-
-    // Szpaler tui przy północnej granicy działki
-    for (let xT = -17.0; xT <= -6.0; xT += 1.6) {
-      const thuja = new THREE.Mesh(
-        new THREE.ConeGeometry(0.48, 2.6, 8),
-        m.get('foliage')
-      );
-      thuja.position.set(xT, 1.3, signZ * -9.85);
-      thuja.castShadow = true;
-      group.add(thuja);
-    }
+    // Brak wysokich drzew zasłaniających elewację ogrodową (zachodnią)
   }
 
   /**
@@ -377,7 +332,7 @@ export class SurroundingsBuilder {
   buildUtilityPole(group) {
     const m = this.materials;
     const xPole = 10.35;
-    const zPole = -3.65;
+    const zPole = -2.55;
     const hPole = 8.80;
 
     // Ażurowy słup żelbetowy ŻN

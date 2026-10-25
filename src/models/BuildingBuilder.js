@@ -61,11 +61,11 @@ export class BuildingBuilder {
     // 3. I PIĘTRO (Y = +4.70 do +7.28 m) + TARAS + GZYMS PODOKAPOWY
     this._buildFirstFloor(firstFloorGroup, interiorsGroup, walkables, options);
 
-    // 4. SCHODY NA PODDASZE (z I piętra +4.70 m na strych +7.55 m)
+    // 4. SCHODY NA PODDASZE (z I piętra +4.70 m na strych +7.55 m: 14 stopni × 21/21 cm wg rzutu 1966 r.)
     const atticStairs = this._buildOakWinderStairs(
       ELEVATIONS.FIRST_FLOOR,
       ELEVATIONS.ATTIC_FLOOR,
-      16,
+      14,
       false
     );
     firstFloorGroup.add(atticStairs);
@@ -124,14 +124,25 @@ export class BuildingBuilder {
 
     // Salon (klepka dębowa w jodełkę)
     addFloorTile(-5.15, -1.10, -5.70, -0.38, this.mats.oakParquet);
-    // Sypialnia frontowa / gabinet (klepka dębowa)
-    addFloorTile(1.12, 5.12, -5.70, -2.45, this.mats.oakParquet);
-    // Korytarz i hol główny przed schodami (Z od -5.70 do -2.85) + przejście wschodnie do drzwi piwnicy i WC (X od +0.02 do +1.05, Z od -2.85 do -1.35)
-    addFloorTile(-1.10, 1.12, -5.70, -2.85, this.mats.oakParquet);
-    addFloorTile(-0.95, 0.02, -2.85, -1.35, this.mats.oakParquet);
+    // Pokój frontowy / gabinet (12,52 m² wg rzutu 1966 r. – klepka dębowa w jodełkę)
+    addFloorTile(1.05, 5.12, -5.70, -2.45, this.mats.oakParquet);
+    // Centralny Wiatrołap / Ganek wejściowy (1,61 m², głęb. 95 cm × szer. 170 cm wg rzutu 1966 r.):
+    // Zagłębiony centralnie między podestem zewnętrznym (Z = -6.22 m) a korytarzem (Z = -5.27 m) w osi X = -0.02 m!
+    addFloorTile(-0.87, 0.83, -6.22, -5.27, this.mats.terrazzo);
+    // Korytarz główny (7,24 m²) w układzie litery "L":
+    // - pełna szerokość części północnej przed schodami (X od -1.10 do +1.05, Z od -5.27 do -2.85),
+    // - przejście wzdłuż biegu schodów (X od +0.02 do +1.05, Z od -2.85 do -1.35),
+    // - wnęka rozdzielcza "L" (110×90 cm: X od +1.05 do +1.95, Z od -2.45 do -1.35) przed wejściem do pokoju, kuchni i WC!
+    // Otwór nad biegiem schodów piwnicznych (X od -0.95 do +0.02, Z od -2.65 do -0.38) pozostaje otwarty!
+    addFloorTile(-1.10, 1.05, -5.27, -2.85, this.mats.oakParquet);
+    addFloorTile(-0.95, 0.02, -2.85, -2.65, this.mats.oakParquet);
     addFloorTile(0.02, 1.05, -2.85, -1.35, this.mats.oakParquet);
-    // Kuchnia i WC (lastriko / terakota)
-    addFloorTile(1.05, 5.12, -2.45, -0.38, this.mats.terrazzo);
+    addFloorTile(1.05, 1.95, -2.45, -1.35, this.mats.oakParquet);
+    // Toaleta / WC parteru (0,99 m², 120×97 cm w narożniku przy kominie: X od +1.02 do +2.22, Z od -1.35 do -0.38)
+    addFloorTile(1.02, 2.22, -1.35, -0.38, this.mats.terrazzo);
+    // Kuchnia (5,96 m², 230×284 cm + strefa wejściowa: jasna drobna terakota/mozaika jak na zdjęciu z wnętrza)
+    addFloorTile(1.95, 2.22, -2.45, -1.35, this.mats.verandaMosaic);
+    addFloorTile(2.22, 5.12, -2.45, -0.38, this.mats.verandaMosaic);
 
     // Ściana zewnętrzna WSCHODNIA (od ulicy frontowej, X = +5.50 m)
     // Okno kuchni (90×150 cm) i duże okno sypialni frontowej (152×150 cm)
@@ -151,7 +162,7 @@ export class BuildingBuilder {
     });
 
     // Ściana zewnętrzna PÓŁNOCNA (od wejścia, Z = -6.08 m)
-    // Okno salonu (155×150 cm), drzwi wejściowe w ganku (100×215 cm), okno gabinetu (150×150 cm)
+    // Okno salonu (155×150 cm), centralna wnęka ganku/wiatrołapu (X od -0.87 do +0.83 m) oraz okno gabinetu (150×150 cm)
     this._buildWall(group, {
       axis: 'X',
       fixedCoord: zNorth + tExt * 0.5,
@@ -163,7 +174,7 @@ export class BuildingBuilder {
       material: this.mats.facadePlaster,
       openings: [
         { cMin: -3.95, cMax: -2.40, yMin: y0 + 0.85, yMax: y0 + 2.35, type: 'window2' },
-        { cMin: -0.05, cMax: 0.95,  yMin: y0,        yMax: y0 + 2.18, type: 'entryDoor' },
+        { cMin: -0.62, cMax: 0.58,  yMin: y0,        yMax: y0 + 2.18, type: 'openArch' },
         { cMin: 2.35,  cMax: 3.85,  yMin: y0 + 0.85, yMax: y0 + 2.35, type: 'window2' },
       ],
     });
@@ -202,7 +213,11 @@ export class BuildingBuilder {
     if (options.includeVeranda1966) {
       addFloorTile(xVeranda + 0.25, xMainRear, -5.83, -0.25, this.mats.verandaMosaic);
 
-      // Ściana zachodnia werandy (X = -8.20 m) z 2 szerokimi oknami panoramicznymi
+      // Ściana zachodnia werandy (X = -8.20 m):
+      // Zgodnie ze zdjęciem z natury: po lewej (od północy, Z od -5.35 do -4.50 m) znajdują się białe,
+      // w pełni przeszklone drzwi ogrodowe wychodzące wprost na podest schodów ogrodowych,
+      // połączone w jeden zestaw z oknem panoramicznym (Z od -4.50 do -3.15 m),
+      // a po prawej (Z od -2.80 do -0.70 m) drugie szerokie okno panoramiczne.
       this._buildWall(group, {
         axis: 'Z',
         fixedCoord: xVeranda + 0.125,
@@ -213,12 +228,21 @@ export class BuildingBuilder {
         yTop: y1,
         material: this.mats.facadePlaster,
         openings: [
-          { cMin: -5.35, cMax: -3.25, yMin: y0 + 0.80, yMax: y0 + 2.35, type: 'window3' },
-          { cMin: -2.85, cMax: -0.75, yMin: y0 + 0.80, yMax: y0 + 2.35, type: 'window3' },
+          { cMin: -5.35, cMax: -4.50, yMin: y0,        yMax: y0 + 2.35, type: 'verandaGardenDoor' },
+          { cMin: -4.50, cMax: -3.15, yMin: y0 + 0.80, yMax: y0 + 2.35, type: 'window2' },
+          { cMin: -2.80, cMax: -0.70, yMin: y0 + 0.80, yMax: y0 + 2.35, type: 'window2' },
         ],
       });
 
-      // Ściana północna werandy (Z = -6.08 m) z drzwiami ogrodowymi na schody i oknem
+      // Pionowa rura spustowa na środkowym filarku ściany zachodniej werandy (widoczna na zdjęciu!)
+      const verandaPipe = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.04, 0.04, y1 - ELEVATIONS.GROUND_LEVEL, 10),
+        this.mats.railingSteel
+      );
+      verandaPipe.position.set(xVeranda - 0.04, (y1 - ELEVATIONS.GROUND_LEVEL) * 0.5, -2.97);
+      group.add(verandaPipe);
+
+      // Ściana północna werandy (Z = -6.08 m) z oknem bocznym (bez wiszących w powietrzu drzwi!)
       this._buildWall(group, {
         axis: 'X',
         fixedCoord: zNorth + 0.125,
@@ -229,8 +253,7 @@ export class BuildingBuilder {
         yTop: y1,
         material: this.mats.facadePlaster,
         openings: [
-          { cMin: -7.85, cMax: -6.90, yMin: y0,        yMax: y0 + 2.15, type: 'gardenDoor' },
-          { cMin: -6.70, cMax: -5.65, yMin: y0 + 0.80, yMax: y0 + 2.35, type: 'window2' },
+          { cMin: -7.55, cMax: -5.95, yMin: y0 + 0.80, yMax: y0 + 2.35, type: 'window2' },
         ],
       });
 
@@ -277,22 +300,72 @@ export class BuildingBuilder {
       ],
     });
 
-    // 2) Ściana między sypialnią frontową (12.8 m²) a korytarzem (X = +1.12 m, Z od -5.70 do -2.45 m)
+    // 1b) Centralny Wiatrołap / Ganek wejściowy (1,61 m², głęb. 95 cm × szer. 170 cm wg rzutu 1966 r. i zdjęć):
+    // - Zewnętrzna ścianka frontowa ganku (Z = -6.22 m, X od -0.87 do +0.83 m) z centralnymi drzwiami wejściowymi 110×200 cm (X od -0.57 do +0.53 m),
+    // - Boczne ścianki i szafy wnękowe w wiatrołapie (po lewej X od +0.58 do +0.83 m i po prawej X od -0.87 do -0.62 m, Z od -6.22 do -5.27 m),
+    // - Wewnętrzna ścianka wiatrołapu zamykająca korytarz od północy (Z = -5.27 m, X od -1.08 do +1.05 m)
+    //   z centralnie umieszczonymi półtoraskrzydłowymi przeszklonymi drzwiami 120×200 cm (X od -0.62 do +0.58 m)!
+    this._buildWall(group, {
+      axis: 'X',
+      fixedCoord: -6.22,
+      thickness: 0.16,
+      start: -0.87,
+      end: 0.83,
+      yBottom: y0,
+      yTop: y1,
+      material: this.mats.facadePlaster,
+      openings: [
+        { cMin: -0.57, cMax: 0.53, yMin: y0, yMax: y0 + 2.10, type: 'entryDoor' },
+      ],
+    });
+
+    // Boczne ścianki zagłębienia ganku i jasne drewniane szafy wnękowe po obu stronach wiatrołapu (jak na zdjęciu nr 4!)
+    for (const xSide of [-0.745, 0.705]) {
+      const closetBox = new THREE.Mesh(
+        new THREE.BoxGeometry(0.25, y1 - y0, 0.95),
+        this.mats.oakParquet
+      );
+      closetBox.position.set(xSide, (y0 + y1) * 0.5, -5.745);
+      closetBox.castShadow = true;
+      closetBox.receiveShadow = true;
+      group.add(closetBox);
+    }
+
+    // Wewnętrzna ściana oddzielająca Wiatrołap od Korytarza (Z = -5.27 m, na całej szerokości korytarza X od -1.08 do +1.05 m)
+    // Centralne drzwi półtoraskrzydłowe 120×200 cm (X od -0.62 do +0.58 m, oś X = -0.02 m)
+    this._buildWall(group, {
+      axis: 'X',
+      fixedCoord: -5.27,
+      thickness: tPart,
+      start: -1.08,
+      end: 1.05,
+      yBottom: y0,
+      yTop: y1,
+      material: this.mats.partitionWall,
+      openings: [
+        { cMin: -0.62, cMax: 0.58, yMin: y0, yMax: y0 + 2.05, type: 'vestibuleInnerDoor' },
+      ],
+    });
+
+    // 2) Ściana między Pokojem frontowym (12,52 m²) a Korytarzem (X = +1.05 m, Z od -5.70 do -2.45 m)
+    // Zgodnie z rzutem inwentaryzacji 1966 r. (280 cm) oraz zdjęciem z wnętrza:
+    // Ściana ta jest PEŁNA (bez otworu drzwiowego!), wykończona boazerią i grzejnikiem,
+    // natomiast wejście do pokoju (0,80×2,00 m) znajduje się w ścianie poprzecznej Z = -2.45 m z wnęki "L"!
     this._buildWall(group, {
       axis: 'Z',
-      fixedCoord: 1.12,
+      fixedCoord: 1.05,
       thickness: tPart,
       start: zNorth + tExt,
       end: -2.45,
       yBottom: y0,
       yTop: y1,
       material: this.mats.partitionWall,
-      openings: [
-        { cMin: -3.55, cMax: -2.65, yMin: y0, yMax: y0 + 2.05, type: 'interiorDoor' },
-      ],
+      openings: [],
     });
 
-    // 3) Ściana oddzielająca pasmo kuchni i WC od sypialni (Z = -2.45 m, X od +1.05 do +5.12 m)
+    // 3) Ściana poprzeczna na Z = -2.45 m (X od +1.05 do +5.12 m):
+    // - W odcinku wnęki rozdzielczej korytarza (X od +1.05 do +1.95 m): mieści DRZWI DO POKOJU (12,52 m²) 0,80×2,00 m!
+    // - W odcinku między Kuchnią (5,96 m²) a Pokojem (X od +1.95 do +5.12 m, dł. 313 cm): PEŁNA ŚCIANA bez drzwi!
     this._buildWall(group, {
       axis: 'X',
       fixedCoord: -2.45,
@@ -303,16 +376,52 @@ export class BuildingBuilder {
       yTop: y1,
       material: this.mats.partitionWall,
       openings: [
-        { cMin: 2.25, cMax: 3.05, yMin: y0, yMax: y0 + 2.05, type: 'interiorDoor' },
+        { cMin: 1.10, cMax: 1.90, yMin: y0, yMax: y0 + 2.02, type: 'interiorDoor' },
       ],
     });
 
-    // 4) Ścianka między kuchnią a WC (X = +2.12 m, Z od -2.45 do -0.38 m)
+    // 4) Ścianka wschodnia wnęki "L" korytarza z DRZWIAMI DO KUCHNI (5,96 m²) 0,80×2,00 m
+    //    (X = +1.95 m, Z od -2.45 do -1.35 m, szer. wnęki 110 cm wg rzutu 1966 r.)
+    //    Patrząc ze schodów w prawo (na wschód), wchodzi się prosto przez te drzwi do kuchni (jak na zdjęciu!)
     this._buildWall(group, {
       axis: 'Z',
-      fixedCoord: 2.12,
+      fixedCoord: 1.95,
       thickness: tPart,
       start: -2.45,
+      end: -1.35,
+      yBottom: y0,
+      yTop: y1,
+      material: this.mats.partitionWall,
+      openings: [
+        { cMin: -2.30, cMax: -1.50, yMin: y0, yMax: y0 + 2.02, type: 'interiorDoor' },
+      ],
+    });
+
+    // 5) Ścianka północna pod zabiegiem schodów i przed WC (Z = -1.35 m, X od +0.02 do +2.22 m):
+    // - W części pod schodami (X od +0.02 do +1.02 m): drzwi zejścia do piwnicy 0,80×2,00 m (cMin: 0.14, cMax: 0.90),
+    // - W części WC (X od +1.02 do +2.22 m, szer. 120 cm wg rzutu 1966 r.): drzwi do WC 0,60×2,00 m (cMin: 1.15, cMax: 1.75)!
+    this._buildWall(group, {
+      axis: 'X',
+      fixedCoord: -1.35,
+      thickness: 0.10,
+      start: 0.02,
+      end: 2.22,
+      yBottom: y0,
+      yTop: y1,
+      material: this.mats.interiorWall,
+      openings: [
+        { cMin: 0.14, cMax: 0.90, yMin: y0, yMax: y0 + 2.02, type: 'interiorDoor' },
+        { cMin: 1.15, cMax: 1.75, yMin: y0, yMax: y0 + 2.02, type: 'interiorDoor' },
+      ],
+    });
+
+    // 6) Ścianka wschodnia WC oddzielająca WC (0,99 m², 120×97 cm) od Kuchni (5,96 m²)
+    //    (X = +2.22 m, Z od -1.35 do -0.38 m – tworzy charakterystyczny uskok 120×160 cm w kuchni na rzucie 1966!)
+    this._buildWall(group, {
+      axis: 'Z',
+      fixedCoord: 2.22,
+      thickness: tPart,
+      start: -1.35,
       end: zSouth - tExt,
       yBottom: y0,
       yTop: y1,
@@ -320,36 +429,18 @@ export class BuildingBuilder {
       openings: [],
     });
 
-    // 5) Ścianka między WC a korytarzem/klatką schodową (X = +1.05 m, Z od -2.45 do -0.38 m)
-    // z drzwiami do WC (widocznymi po lewej stronie w głębi korytarza na zdjęciu nr 1!)
+    // 6b) Ścianka zachodnia WC oddzielająca WC od zabiegu schodów dębowych (X = +1.02 m, Z od -1.35 do -0.38 m)
+    //     Kończy się na Z = -1.35 m, dzięki czemu wnęka korytarza (Z od -2.45 do -1.35 m) jest w pełni otwarta!
     this._buildWall(group, {
       axis: 'Z',
-      fixedCoord: 1.05,
+      fixedCoord: 1.02,
       thickness: tPart,
-      start: -2.45,
+      start: -1.35,
       end: zSouth - tExt,
       yBottom: y0,
       yTop: y1,
       material: this.mats.partitionWall,
-      openings: [
-        { cMin: -2.32, cMax: -1.52, yMin: y0, yMax: y0 + 2.02, type: 'interiorDoor' },
-      ],
-    });
-
-    // 6) Ścianka poprzeczna pod zabiegiem schodów (Z = -1.35 m, X od +0.02 do +1.05 m)
-    // z drzwiami zejścia do piwnicy na wprost korytarza (dokładnie jak na zdjęciu nr 1!)
-    this._buildWall(group, {
-      axis: 'X',
-      fixedCoord: -1.35,
-      thickness: 0.10,
-      start: 0.02,
-      end: 1.05,
-      yBottom: y0,
-      yTop: y0 + 2.38,
-      material: this.mats.interiorWall,
-      openings: [
-        { cMin: 0.14, cMax: 0.94, yMin: y0, yMax: y0 + 2.02, type: 'interiorDoor' },
-      ],
+      openings: [],
     });
 
     // 7) Pionowa boazeria drewniana w korytarzu oraz meble historyczne parteru
@@ -381,16 +472,37 @@ export class BuildingBuilder {
       walkables.push(mesh);
     };
 
-    // Posadzki I piętra (z wycięciem otworu na klatkę schodową X: -0.95 do +0.98, Z: -2.85 do -0.38,
-    // przy czym po stronie wschodniej X: +0.02..+1.05 podest półpiętra sięga do Z = -2.01 m, odbierając górny bieg!)
-    // Sypialnia główna zachodnia (25,58 m² / 24,4 m²)
-    addFloorTile(-5.15, -1.05, -5.70, -0.38, this.mats.oakParquet);
-    // Sypialnia wschodnia (16,70 m² / 16,9 m²) i półpiętro północne
-    addFloorTile(-1.05, 5.12, -5.70, -2.85, this.mats.oakParquet);
-    // Podest wyjściowy półpiętra po stronie wschodniej słupa centralnego (X: +0.02 do +1.05, Z: -2.85 do -2.01)
-    addFloorTile(0.02, 1.05, -2.85, -2.01, this.mats.oakParquet);
-    // Łazienka (5,4 m²) i WC (0,9 m²)
-    addFloorTile(1.05, 5.12, -2.85, -0.38, this.mats.verandaMosaic);
+    // Posadzki I piętra (dokładnie wg Rzutu 1-ego Piętra 1966 r. oraz detalu korytarza 3,76 m²):
+    // 1. Sypialnia Główna Zachodnia (25,58 m²):
+    //    - główny trakt zachodni (szer. 400 cm × dł. 560 cm: X od -5.15 do -1.00 m, Z od -5.70 do -0.38 m),
+    //    - poszerzenie północno-wschodnie do 513 cm (50 cm przejścia + 63 cm szafy wnękowej: X od -1.00 do +0.02 m, Z od -5.70 do -3.05 m)!
+    addFloorTile(-5.15, -1.00, -5.70, -0.38, this.mats.oakParquet);
+    addFloorTile(-1.00, 0.02, -5.70, -3.05, this.mats.oakParquet);
+
+    // 2. Sypialnia Wschodnia (16,58 m²):
+    //    - szerokość od północy 507 cm (287 cm + 220 cm: X od +0.02 do +5.12 m, Z od -5.70 do -3.05 m),
+    //    - trakt wschodni za łazienką (szer. 287 cm: X od +1.95 do +5.12 m, Z od -3.05 do -2.35 m),
+    //    - strefa wejściowa za drzwiami z korytarza (X od +1.02 do +1.95 m, Z od -3.05 do -2.95 m).
+    addFloorTile(0.02, 5.12, -5.70, -3.05, this.mats.oakParquet);
+    addFloorTile(1.95, 5.12, -3.05, -2.35, this.mats.oakParquet);
+    addFloorTile(1.02, 1.95, -3.05, -2.95, this.mats.oakParquet);
+
+    // 3. Korytarz I piętra (3,76 m² wg rzutu 1966 r. i załączonego detalu korytarza):
+    //    - wnęka wschodnia (dł. 160 cm: X od +1.02 do +1.95 m, Z od -2.95 do -1.35 m) między drzwiami WC (Z = -1.35),
+    //      drzwiami Łazienki (X = +1.95) i drzwiami Sypialni Wschodniej (Z = -2.95),
+    //    - część centralna przed wyjściem schodów z parteru (głęb. 128 cm, szer. 110 cm: X od +0.02 do +1.02 m, Z od -3.05 do -1.92 m),
+    //    - przejście zachodnie (szer. 73/84 cm: X od -1.00 do +0.02 m, Z od -3.05 do -2.21 m) przed pierwszym stopniem
+    //      schodów strychowych (183 cm od ściany płd.), prowadzące do drzwi Sypialni Głównej (X = -1.00 m)!
+    addFloorTile(1.02, 1.95, -2.95, -1.35, this.mats.oakParquet);
+    addFloorTile(0.02, 1.02, -3.05, -1.92, this.mats.oakParquet);
+    addFloorTile(-1.00, 0.02, -3.05, -2.21, this.mats.oakParquet);
+
+    // 4. Toaleta / WC I piętra (0,80 m², 107×83 cm w narożniku przy kominie: X od +1.02 do +2.09 m, Z od -1.35 do -0.38 m)
+    addFloorTile(1.02, 2.09, -1.35, -0.38, this.mats.terrazzo);
+
+    // 5. Łazienka (5,06 m², 290×185 cm z uskokiem WC: X od +1.95 do +5.12 m, Z od -2.35 do -0.38 m)
+    addFloorTile(1.95, 2.09, -2.35, -1.35, this.mats.verandaMosaic);
+    addFloorTile(2.09, 5.12, -2.35, -0.38, this.mats.verandaMosaic);
 
     // Płyta i balustrada TARASU OGRODOWEGO nad werandą (15,9 m²)
     if (options.includeVeranda1966) {
@@ -461,87 +573,155 @@ export class BuildingBuilder {
       ],
     });
 
-    // ŚCIANY WEWNĘTRZNE I PIĘTRA:
-    // 1) Główna ściana poprzeczna nośna (X = -1.00 m) z drzwiami do Sypialni Głównej
+    // ŚCIANY WEWNĘTRZNE I PIĘTRA (dokładnie wg Rzutu 1-ego Piętra 1966 r., detalu korytarza 3,76 m² oraz zdjęć 3 i 4):
+    // 1) Ściana zachodnia klatki schodowej i korytarza (X = -1.00 m, Z od -3.05 do -0.38 m):
+    //    - od Z = -2.21 do -0.38 m (dł. 183 cm): pełna ściana wzdłuż dolnego biegu schodów strychowych (14×21/21),
+    //    - od Z = -3.05 do -2.21 m (szer. przejścia 73/84 cm przed schodami strychowymi):
+    //      mieści DRZWI DO SYPIALNI GŁÓWNEJ (25,58 m²) 0,80×2,00 m!
     this._buildWall(group, {
       axis: 'Z',
       fixedCoord: -1.00,
       thickness: tInt,
-      start: zNorth + tExt,
+      start: -3.05,
       end: zSouth - tExt,
       yBottom: y0,
       yTop: y1,
       material: this.mats.interiorWall,
       openings: [
-        { cMin: -3.55, cMax: -2.65, yMin: y0, yMax: y0 + 2.05, type: 'interiorDoor' },
+        { cMin: -3.01, cMax: -2.21, yMin: y0, yMax: y0 + 2.02, type: 'interiorDoor' },
       ],
     });
 
-    // 2) Ścianka wydzielająca półpiętro od Sypialni Wschodniej (układ L wg rzutu 1966 i Skan 3D)
+    // 2) Pełna ściana północna korytarza I piętra (Z = -3.05 m, X od -1.00 do +1.04 m, gr. 15 cm):
+    //    - od X = -1.00 do +0.02 m: zamyka od północy przejście (73 cm) przed schodami strychowymi (za ścianą znajduje się
+    //      50 cm przejścia i 63 cm szafy wnękowej Sypialni Głównej!),
+    //    - od X = +0.02 do +1.04 m (odcinek 110 cm w odległości 128 cm od schodów): pełna ściana z ciemną boazerią
+    //      oddzielająca korytarz od poszerzenia (220 cm) Sypialni Wschodniej!
     this._buildWall(group, {
-      axis: 'Z',
-      fixedCoord: 1.55,
-      thickness: tPart,
-      start: -3.95,
-      end: -2.35,
+      axis: 'X',
+      fixedCoord: -3.05,
+      thickness: 0.15,
+      start: -1.00,
+      end: 1.04,
       yBottom: y0,
       yTop: y1,
       material: this.mats.partitionWall,
       openings: [],
     });
+
+    // 3) Ściana działowa między dwoma sypialniami w części północnej (X = +0.02 m, Z od -5.70 do -3.05 m, dł. 282 cm):
+    //    Przedłuża centralną oś klatki schodowej do ściany północnej budynku, dzieląc front północny na:
+    //    - Sypialnię Wschodnią (16,58 m²) o szerokości 287 + 220 = 507 cm (X od +0.02 do +5.12 m),
+    //    - Sypialnię Główną (25,58 m²) o szerokości 63 + 50 + 400 = 513 cm (X od -5.12 do +0.02 m, z szafą wnękową 63 cm przy tej ścianie)!
+    this._buildWall(group, {
+      axis: 'Z',
+      fixedCoord: 0.02,
+      thickness: tPart,
+      start: zNorth + tExt,
+      end: -3.05,
+      yBottom: y0,
+      yTop: y1,
+      material: this.mats.partitionWall,
+      openings: [],
+    });
+
+    // 4) Ścianka północna wschodniej wnęki korytarza z DRZWIAMI DO SYPIALNI WSCHODNIEJ (16,58 m²) 0,80×2,00 m
+    //    (Z = -2.95 m, X od +1.02 do +1.95 m – z 10 cm uskokiem względem ściany Z = -3.05 m, dokładnie jak na detalu korytarza!)
     this._buildWall(group, {
       axis: 'X',
-      fixedCoord: -3.95,
+      fixedCoord: -2.95,
       thickness: tPart,
-      start: -1.00,
-      end: 1.55,
+      start: 1.02,
+      end: 1.95,
       yBottom: y0,
       yTop: y1,
       material: this.mats.partitionWall,
       openings: [
-        { cMin: 0.35, cMax: 1.20, yMin: y0, yMax: y0 + 2.05, type: 'interiorDoor' },
+        { cMin: 1.08, cMax: 1.88, yMin: y0, yMax: y0 + 2.02, type: 'interiorDoor' },
       ],
     });
 
-    // 3) Ścianka oddzielająca pasmo Łazienki i WC od półpiętra i sypialni (Z = -2.35 m)
+    // 5) Ścianka wschodnia korytarza (X = +1.95 m, Z od -2.95 do -1.35 m, łączna długość 160 cm wg rzutu 1966 r.):
+    //    - od Z = -2.95 do -2.35 m (odcinek 30 cm + mur): pełna ścianka narożnika Sypialni Wschodniej,
+    //    - od Z = -2.35 do -1.35 m: ścianka z DRZWIAMI DO ŁAZIENKI (5,06 m²) 0,75×2,00 m!
+    this._buildWall(group, {
+      axis: 'Z',
+      fixedCoord: 1.95,
+      thickness: tPart,
+      start: -2.95,
+      end: -1.35,
+      yBottom: y0,
+      yTop: y1,
+      material: this.mats.partitionWall,
+      openings: [
+        { cMin: -2.20, cMax: -1.45, yMin: y0, yMax: y0 + 2.00, type: 'interiorDoor' },
+      ],
+    });
+
+    // 6) Pełna ściana poprzeczna między Łazienką (5,06 m², szer. 185 cm) a Sypialnią Wschodnią (16,58 m²)
+    //    (Z = -2.35 m, X od +1.95 do +5.12 m, dł. 287/290 cm)
     this._buildWall(group, {
       axis: 'X',
       fixedCoord: -2.35,
       thickness: tPart,
-      start: 1.00,
+      start: 1.95,
       end: xFront - tExt,
       yBottom: y0,
       yTop: y1,
       material: this.mats.partitionWall,
+      openings: [],
+    });
+
+    // 7) Ścianka frontowa WC I piętra (Z = -1.35 m, WYŁĄCZNIE od X = +1.02 do +2.09 m, szer. 107 cm wg rzutu 1966 r.):
+    //    Mieści DRZWI DO WC (0,80 m²) 0,60×2,00 m i NIE wchodzi w światło schodów (X od +0.02 do +1.02 m jest w pełni otwarte)!
+    this._buildWall(group, {
+      axis: 'X',
+      fixedCoord: -1.35,
+      thickness: 0.10,
+      start: 1.02,
+      end: 2.09,
+      yBottom: y0,
+      yTop: y1,
+      material: this.mats.interiorWall,
       openings: [
-        { cMin: 1.15, cMax: 1.85, yMin: y0, yMax: y0 + 2.00, type: 'interiorDoor' },
-        { cMin: 2.15, cMax: 2.90, yMin: y0, yMax: y0 + 2.00, type: 'interiorDoor' },
+        { cMin: 1.12, cMax: 1.72, yMin: y0, yMax: y0 + 2.00, type: 'interiorDoor' },
       ],
     });
 
-    // 4) Ścianki działowe WC i Łazienki (X = +2.05 m oraz X = +1.05 m)
+    // 8) Ścianka wschodnia WC oddzielająca WC (0,80 m², 107×83 cm) od Łazienki (5,06 m²)
+    //    (X = +2.09 m, Z od -1.35 do -0.38 m – tworzy charakterystyczny uskok 165/290 cm w Łazience na rzucie 1966!)
     this._buildWall(group, {
       axis: 'Z',
-      fixedCoord: 2.05,
+      fixedCoord: 2.09,
       thickness: tPart,
-      start: -2.35,
+      start: -1.35,
       end: zSouth - tExt,
       yBottom: y0,
       yTop: y1,
       material: this.mats.partitionWall,
       openings: [],
     });
+
+    // 9) Ścianka zachodnia WC oddzielająca WC od zabiegu schodów (X = +1.02 m, Z od -1.35 do -0.38 m)
     this._buildWall(group, {
       axis: 'Z',
-      fixedCoord: 1.05,
+      fixedCoord: 1.02,
       thickness: tPart,
-      start: -2.35,
+      start: -1.35,
       end: zSouth - tExt,
       yBottom: y0,
       yTop: y1,
       material: this.mats.partitionWall,
       openings: [],
     });
+
+    // Niska ścianka policzkowa / balustrada oddzielająca zejście schodów od wnęki przed WC (X = +1.00 m, Z od -1.92 do -1.35 m)
+    const stairCurbWall = new THREE.Mesh(
+      new THREE.BoxGeometry(0.08, 0.96, 0.57),
+      this.mats.wainscotingWood
+    );
+    stairCurbWall.position.set(1.00, y0 + 0.48, -1.635);
+    group.add(stairCurbWall);
 
     // 5) Klasyczny profilowany GZYMS PODOKAPOWY CIĄGNIONY (Cornice) + rynny i rury spustowe
     this._buildCrownCorniceAndGutters(group, xFront, xMainRear, zNorth, zSouth, ELEVATIONS.ATTIC_FLOOR);
@@ -570,11 +750,11 @@ export class BuildingBuilder {
       walkables.push(mesh);
     };
 
-    // Część wschodnia, północna i zachodnia wokół klatki schodowej (z podejściem wyjściowym Z = -2.01 po stronie wschodniej)
+    // Część wschodnia, północna i zachodnia wokół klatki schodowej (z podejściem wyjściowym Z = -1.85 po stronie wschodniej)
     addPineFloor(1.05, xFront, zNorth, zSouth);
-    addPineFloor(xRear, 1.05, zNorth, -2.85);
-    addPineFloor(0.02, 1.05, -2.85, -2.01);
-    addPineFloor(xRear, -0.95, -2.85, zSouth);
+    addPineFloor(xRear, 1.05, zNorth, -2.21);
+    addPineFloor(0.02, 1.05, -2.21, -1.80);
+    addPineFloor(xRear, -0.95, -2.21, zSouth);
 
     // Ścianka kolankowa obwodowa (wys. 0.45 m pod murłatę)
     const kneeH = 0.32;
@@ -590,33 +770,6 @@ export class BuildingBuilder {
     addKneeWall(xRear, zNorth, xFront, zNorth);
     addKneeWall(xFront, zNorth, xFront, 0);
     addKneeWall(xRear, zNorth, xRear, 0);
-
-    // Ścianki działowe poddasza wg pomiaru Skan 3D (FLOOR02.png: 37 m² + 13 m² + obudowa klatki)
-    const partH = 2.05;
-    this._buildWall(group, {
-      axis: 'Z',
-      fixedCoord: -1.00,
-      thickness: 0.12,
-      start: -5.10,
-      end: -2.85,
-      yBottom: y0,
-      yTop: y0 + partH,
-      material: this.mats.partitionWall,
-      openings: [
-        { cMin: -3.75, cMax: -2.95, yMin: y0, yMax: y0 + 1.90, type: 'interiorDoor' },
-      ],
-    });
-    this._buildWall(group, {
-      axis: 'X',
-      fixedCoord: -2.85,
-      thickness: 0.12,
-      start: -4.80,
-      end: -1.00,
-      yBottom: y0,
-      yTop: y0 + partH,
-      material: this.mats.partitionWall,
-      openings: [],
-    });
   }
 
   // ==========================================================================
@@ -642,10 +795,14 @@ export class BuildingBuilder {
     const totalRise = yTop - yBottom;
     const riserH = totalRise / totalSteps; // ~0.1722 m dla Parter -> I Piętro
 
-    const xWest = -0.94;   // Lico wschodnie ściany Salonu
+    const xWest = -0.94;   // Lico wschodnie ściany Salonu / Sypialni Głównej
     const xPivot = 0.02;   // Oś centralnego słupa dębowego (szerokość biegu = 0.96 m)
     const xEast = 0.98;    // Lico zachodnie ściany WC
-    const zStart = -2.89;  // Pierwszy stopień przy portalu Salonu (jak na zdjęciu nr 1)
+    // Na parterze bieg dolny zaczyna się przy portalu Salonu (Z = -2.89 m, 7 stopni),
+    // natomiast na I piętrze schody strychowe (14×21/21 wg rzutu 1966 r.) mają długość całkowitą 183 cm od ściany płd.,
+    // więc ich pierwszy stopień zaczyna się na Z = -2.21 m (4 stopnie dolne), zostawiając 73/84 cm przejścia
+    // (Z od -3.05 do -2.21 m) do drzwi Sypialni Głównej (X = -1.00 m)!
+    const zStart = isMainFlight ? -2.89 : -2.21;
     const zPivot = -1.35;  // Oś słupa centralnego i początek zabiegu 180°
     const zSouth = -0.39;  // Lico wewnętrzne południowej ściany dylatacyjnej (głęb. zabiegu = 0.96 m)
 
@@ -675,10 +832,10 @@ export class BuildingBuilder {
     group.add(columnTrim);
 
     // ------------------------------------------------------------------------
-    // 2. BIEG DOLNY PROSTY (7 STOPNI W KIERUNKU POŁUDNIOWYM +Z)
+    // 2. BIEG DOLNY PROSTY (7 STOPNI NA PARTERZE / 4 STOPNIE NA I PIĘTRZE W KIERUNKU +Z)
     // ------------------------------------------------------------------------
-    const nLower = 7;
-    const lowerRun = (zPivot - zStart) / nLower; // 1.54 / 7 = 0.22 m
+    const nLower = isMainFlight ? 7 : 4;
+    const lowerRun = (zPivot - zStart) / nLower; // ~0.215-0.22 m
     const xLowerCenter = (xWest + xPivot) * 0.5; // -0.46 m
 
     for (let i = 0; i < nLower; i++) {
@@ -972,8 +1129,8 @@ export class BuildingBuilder {
     const zWall = BUILDING_DIMS.Z_NORTH_FACE; // -6.08 m
     const zOuter = BUILDING_DIMS.Z_PORCH_OUTER; // -7.43 m
     const porchDepth = Math.abs(zOuter - zWall); // 1.35 m
-    const porchWidth = 1.65;
-    const xCenter = 0.45;
+    const porchWidth = 1.76;
+    const xCenter = -0.02; // dokładnie w centralnej osi korytarza i wiatrołapu (1,61 m²)!
 
     // 1. Podest wejściowy murowany na rzędnej Y = +1.60 m
     const landingGeo = new THREE.BoxGeometry(porchWidth, yGroundFloor, porchDepth);
@@ -1040,41 +1197,76 @@ export class BuildingBuilder {
   }
 
   _buildGardenVerandaStairs(yGroundFloor) {
-    // Schody z werandy do ogrodu wzdłuż północnej osi (długość w rzucie 2.37 m wg inwent. 1966 str. 6)
-    // Na zdjęciach PXL_20260814_124223667.jpg wyłożone czerwoną terakotą ze stalową poręczą
+    // Schody z werandy do ogrodu bezpośrednio przed przeszklonymi drzwiami w ścianie ZACHODNIEJ
+    // (X = -8.20 m, oś Z = -4.925 m, Z od -5.48 do -4.37 m), dokładnie jak na fotografii z natury:
+    // - górny podest przy progu drzwiowym,
+    // - stopnie wyłożone czerwoną terakotą/klinkierem schodzące na zachód (-X) do ogrodu,
+    // - obustronne smukłe stalowe poręcze na słupkach.
     const group = new THREE.Group();
     group.name = 'Garden_Veranda_Stairs';
 
-    const steps = 9;
-    const totalLength = BUILDING_DIMS.GARDEN_STAIRS_LENGTH; // 2.37 m
-    const stepRun = totalLength / steps;
-    const stepRise = yGroundFloor / steps;
-    const xStart = BUILDING_DIMS.X_VERANDA_FACE; // -8.20 m
-    const zCenter = BUILDING_DIMS.Z_NORTH_FACE - 0.55; // przy północno-zachodnim narożniku werandy
+    const steps = 8;
+    const landingDepth = 0.52;
+    const totalLength = BUILDING_DIMS.GARDEN_STAIRS_LENGTH; // 2.37 m łącznie z podestem
+    const runLength = totalLength - landingDepth;
+    const stepRun = runLength / steps;
+    const stepRise = (yGroundFloor - 0.04) / steps;
+    const xWall = BUILDING_DIMS.X_VERANDA_FACE; // -8.20 m
+    const zCenter = -4.925; // dokładnie w osi drzwi werandowych (Z od -5.35 do -4.50 m)
+    const stairWidth = 1.12;
 
-    // Jednak na rzucie 1966 str. 6 i zdjęciach PXL_20260814_124223667.jpg schody schodzą
-    // bezpośrednio od drzwi północnych werandy w stronę zachodnią (do ogrodu)!
+    // 1. Górny podest przed drzwiami werandy (X od -8.20 do -8.72 m)
+    const landingH = yGroundFloor - 0.04;
+    const landingMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(landingDepth, landingH, stairWidth),
+      this.mats.clinkerStairs
+    );
+    landingMesh.position.set(xWall - landingDepth * 0.5, landingH * 0.5, zCenter);
+    landingMesh.castShadow = true;
+    landingMesh.receiveShadow = true;
+    group.add(landingMesh);
+
+    // 2. Stopnie schodzące na zachód (-X) do ogrodu
+    const xStepsStart = xWall - landingDepth;
     for (let i = 0; i < steps; i++) {
-      const h = yGroundFloor - i * stepRise;
-      const sx = xStart - (i + 0.5) * stepRun;
+      const h = landingH - (i + 1) * stepRise + stepRise;
+      const sx = xStepsStart - (i + 0.5) * stepRun;
       const stepMesh = new THREE.Mesh(
-        new THREE.BoxGeometry(stepRun, h, 1.15),
+        new THREE.BoxGeometry(stepRun + 0.02, h, stairWidth),
         this.mats.clinkerStairs
       );
-      stepMesh.position.set(sx, h * 0.5, -5.50);
+      stepMesh.position.set(sx, h * 0.5, zCenter);
       stepMesh.castShadow = true;
       stepMesh.receiveShadow = true;
       group.add(stepMesh);
     }
 
-    // Poręcz stalowa schodów ogrodowych
-    const rail = new THREE.Mesh(
-      new THREE.BoxGeometry(totalLength + 0.2, 0.035, 0.035),
-      this.mats.railingSteel
-    );
-    rail.position.set(xStart - totalLength * 0.5, yGroundFloor * 0.5 + 0.88, -6.02);
-    rail.rotation.z = Math.atan2(yGroundFloor, totalLength);
-    group.add(rail);
+    // 3. Obustronne poręcze stalowe (lewa i prawa, jak na zdjęciu z ogrodu!)
+    const slopeAngle = Math.atan2(landingH, runLength);
+    const railLen = Math.hypot(runLength + landingDepth * 0.6, landingH);
+    for (const side of [-1, 1]) {
+      const zRail = zCenter + side * (stairWidth * 0.5 - 0.04);
+
+      const handrail = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.018, 0.018, railLen, 8),
+        this.mats.railingSteel
+      );
+      handrail.position.set(xWall - totalLength * 0.52, landingH * 0.5 + 0.86, zRail);
+      handrail.rotation.z = Math.PI * 0.5 - slopeAngle;
+      group.add(handrail);
+
+      // Słupki podtrzymujące poręcz (u góry, w środku i u dołu biegu)
+      for (const t of [0.12, 0.55, 0.94]) {
+        const px = xWall - t * totalLength;
+        const pyBase = Math.max(0, landingH * (1 - Math.max(0, (t * totalLength - landingDepth) / runLength)));
+        const post = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.015, 0.015, 0.86, 8),
+          this.mats.railingSteel
+        );
+        post.position.set(px, pyBase + 0.43, zRail);
+        group.add(post);
+      }
+    }
 
     return group;
   }
@@ -1304,6 +1496,64 @@ export class BuildingBuilder {
         return leafGroup;
       };
       joinery.add(createOpenLeaf(1), createOpenLeaf(-1));
+    } else if (op.type === 'verandaGardenDoor') {
+      // Białe, przeszklone na pełnej wysokości drzwi ogrodowe werandy (jak na zdjęciu z ogrodu):
+      // - biała rama ościeżnicy i skrzydła,
+      // - poziomy szpros (poprzeczka) na wysokości parapetu sąsiedniego okna (0.80 m od posadzki),
+      // - przeszklenie zarówno w dolnej, jak i w górnej kwaterze.
+      const frameT = 0.06;
+      const depth = 0.09;
+      const topBar = new THREE.Mesh(new THREE.BoxGeometry(w, frameT, depth), this.mats.windowFrameWhite);
+      topBar.position.y = h * 0.5 - frameT * 0.5;
+      const botBar = new THREE.Mesh(new THREE.BoxGeometry(w, frameT * 1.3, depth), this.mats.windowFrameWhite);
+      botBar.position.y = -h * 0.5 + frameT * 0.65;
+      const leftBar = new THREE.Mesh(new THREE.BoxGeometry(frameT, h, depth), this.mats.windowFrameWhite);
+      leftBar.position.x = -w * 0.5 + frameT * 0.5;
+      const rightBar = new THREE.Mesh(new THREE.BoxGeometry(frameT, h, depth), this.mats.windowFrameWhite);
+      rightBar.position.x = w * 0.5 - frameT * 0.5;
+
+      // Pozioma poprzeczka na wysokości parapetu (0.80 m nad posadzką)
+      const midRailY = -h * 0.5 + 0.80;
+      const midRail = new THREE.Mesh(new THREE.BoxGeometry(w - frameT * 2, 0.055, depth), this.mats.windowFrameWhite);
+      midRail.position.y = midRailY;
+
+      // Szyba górna i dolna
+      const glassPane = new THREE.Mesh(
+        new THREE.BoxGeometry(w - frameT * 2, h - frameT * 2.3, 0.016),
+        this.mats.glassClear
+      );
+      joinery.add(topBar, botBar, leftBar, rightBar, midRail, glassPane);
+    } else if (op.type === 'vestibuleInnerDoor') {
+      // Centralne półtoraskrzydłowe przeszklone drzwi wewnętrzne wiatrołapu (120 × 200 cm, jak na zdjęciach 2 i 4!):
+      // - skrzydło główne (szer. 84 cm) z dużą taflą szkła ornamentowego mrożonego,
+      // - dostawka boczna (szer. 32 cm) z wąskim pionowym paskiem szkła ornamentowego.
+      const head = new THREE.Mesh(new THREE.BoxGeometry(w, 0.05, thickness + 0.04), this.mats.oakStairs);
+      head.position.y = h * 0.5 - 0.025;
+      const jambL = new THREE.Mesh(new THREE.BoxGeometry(0.05, h, thickness + 0.04), this.mats.oakStairs);
+      jambL.position.x = -w * 0.5 + 0.025;
+      const jambR = new THREE.Mesh(new THREE.BoxGeometry(0.05, h, thickness + 0.04), this.mats.oakStairs);
+      jambR.position.x = w * 0.5 - 0.025;
+      joinery.add(head, jambL, jambR);
+
+      // Dostawka wschodnia (lewa patrząc z korytarza na północ: X od +0.24 do +0.56)
+      const sideW = 0.32;
+      const sideLeaf = new THREE.Mesh(new THREE.BoxGeometry(sideW, h - 0.06, 0.045), this.mats.oakStairs);
+      sideLeaf.position.x = w * 0.5 - 0.04 - sideW * 0.5;
+      const sideGlass = new THREE.Mesh(new THREE.BoxGeometry(0.11, h * 0.58, 0.05), this.mats.glassOrnamental);
+      sideGlass.position.set(sideLeaf.position.x, 0.12, 0);
+      joinery.add(sideLeaf, sideGlass);
+
+      // Skrzydło główne (lekko uchylone do korytarza, z dużą szybą ornamentową jak na zdjęciu nr 2!)
+      const mainW = w - sideW - 0.08;
+      const mainPivot = new THREE.Group();
+      mainPivot.position.set(-w * 0.5 + 0.04, 0, 0);
+      const mainLeaf = new THREE.Mesh(new THREE.BoxGeometry(mainW, h - 0.06, 0.045), this.mats.oakStairs);
+      mainLeaf.position.x = mainW * 0.5;
+      const mainGlass = new THREE.Mesh(new THREE.BoxGeometry(mainW * 0.68, h * 0.60, 0.05), this.mats.glassOrnamental);
+      mainGlass.position.set(mainW * 0.5, 0.12, 0);
+      mainPivot.add(mainLeaf, mainGlass);
+      mainPivot.rotation.y = 0.28; // lekko uchylone do korytarza (jak na zdjęciu nr 2!)
+      joinery.add(mainPivot);
     } else if (op.type === 'entryDoor' || op.type === 'gardenDoor') {
       const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.07), this.mats.doorWood);
       const upperGlass = new THREE.Mesh(new THREE.BoxGeometry(w * 0.62, h * 0.42, 0.08), this.mats.glassClear);
@@ -1361,28 +1611,91 @@ export class BuildingBuilder {
     wainscotEast.position.set(0.975, y0 + 4.10, -1.20);
     group.add(wainscotEast);
 
-    // d) Boazeria na ścianie wschodniej korytarza parteru (X = +1.05 m, przy drzwiach do WC i sypialni)
+    // d) Boazeria na ścianie wschodniej korytarza parteru (X = +0.985 m, Z od -5.27 do -2.45 m – bez zasłaniania wnęki "L"!)
     const wainscotHallEast = new THREE.Mesh(
-      new THREE.BoxGeometry(0.02, 2.08, 3.20),
+      new THREE.BoxGeometry(0.02, 2.08, 2.80),
       this.mats.wainscotingWood
     );
-    wainscotHallEast.position.set(1.04, y0 + 1.04, -4.10);
+    wainscotHallEast.position.set(0.985, y0 + 1.04, -3.86);
     group.add(wainscotHallEast);
 
-    // e) Skrzydła drzwiowe w głębi korytarza (drzwi do piwnicy pod schodami Z=-1.35 oraz drzwi do WC X=+1.05)
+    // Boazeria po obu stronach centralnych drzwi wiatrołapu na ścianie północnej korytarza (Z = -5.20 m, jak na zdjęciu nr 2!)
+    for (const [xW, wLen] of [[-0.84, 0.44], [0.80, 0.44]]) {
+      const wainscotNorthPier = new THREE.Mesh(
+        new THREE.BoxGeometry(wLen, 2.08, 0.02),
+        this.mats.wainscotingWood
+      );
+      wainscotNorthPier.position.set(xW, y0 + 1.04, -5.20);
+      group.add(wainscotNorthPier);
+    }
+
+    // Drewniana szafka pod telefon po prawej (zachodniej) stronie drzwi wiatrołapu (widoczna na zdjęciu nr 2!)
+    const phoneStand = new THREE.Mesh(
+      new THREE.BoxGeometry(0.42, 0.74, 0.36),
+      this.mats.oakStairs
+    );
+    phoneStand.position.set(-0.80, y0 + 0.37, -4.98);
+    group.add(phoneStand);
+
+    // Żeberkowy grzejnik w korytarzu przy ścianie pokoju frontowego (widoczny w lewym górnym rogu zdjęcia z wnętrza!)
+    const hallRadiator = new THREE.Mesh(
+      new THREE.BoxGeometry(0.11, 0.62, 0.72),
+      this.mats.wainscotingWood
+    );
+    hallRadiator.position.set(0.92, y0 + 0.42, -2.95);
+    group.add(hallRadiator);
+
+    // e) Skrzydła drzwiowe wokół wnęki "L" korytarza (zgodnie z rzutem 1966 r. i zdjęciem z wnętrza):
+    // 1. Zamknięte skrzydło drzwi do piwnicy pod schodami (Z = -1.35 m, X = +0.52 m)
     const basementDoorLeaf = new THREE.Mesh(
       new THREE.BoxGeometry(0.76, 1.98, 0.04),
       this.mats.doorWood
     );
-    basementDoorLeaf.position.set(0.54, y0 + 0.99, -1.35);
+    basementDoorLeaf.position.set(0.52, y0 + 0.99, -1.35);
     group.add(basementDoorLeaf);
 
+    // 2. Zamknięte skrzydło drzwi do WC (0,60 × 2,00 m na Z = -1.35 m, X = +1.45 m – u dołu zdjęcia z wnętrza!)
     const wcDoorLeaf = new THREE.Mesh(
-      new THREE.BoxGeometry(0.04, 1.98, 0.76),
+      new THREE.BoxGeometry(0.58, 1.98, 0.04),
       this.mats.doorWood
     );
-    wcDoorLeaf.position.set(1.03, y0 + 0.99, -1.92);
+    wcDoorLeaf.position.set(1.45, y0 + 0.99, -1.35);
     group.add(wcDoorLeaf);
+
+    // 3. Otwarte przeszklone skrzydło drzwi do Pokoju frontowego (12,52 m²) na Z = -2.45 m (X od +1.10 do +1.90 m)
+    //    Uchylone do wnętrza pokoju, z szybą ornamentową (dokładnie jak u góry zdjęcia z wnętrza!)
+    const studyDoorPivot = new THREE.Group();
+    studyDoorPivot.position.set(1.12, y0 + 1.00, -2.48);
+    const studyLeafFrame = new THREE.Mesh(
+      new THREE.BoxGeometry(0.76, 1.98, 0.04),
+      this.mats.oakStairs
+    );
+    studyLeafFrame.position.x = 0.38;
+    const studyLeafGlass = new THREE.Mesh(
+      new THREE.BoxGeometry(0.52, 1.32, 0.045),
+      this.mats.glassOrnamental
+    );
+    studyLeafGlass.position.set(0.38, 0.14, 0);
+    studyDoorPivot.add(studyLeafFrame, studyLeafGlass);
+    studyDoorPivot.rotation.y = 1.25; // otwarte do wnętrza pokoju
+    group.add(studyDoorPivot);
+
+    // 4. Otwarte przeszklone skrzydło drzwi do Kuchni (5,96 m²) na X = +1.95 m (Z od -2.30 do -1.50 m)
+    const kitchenDoorPivot = new THREE.Group();
+    kitchenDoorPivot.position.set(1.98, y0 + 1.00, -2.28);
+    const kitchenLeafFrame = new THREE.Mesh(
+      new THREE.BoxGeometry(0.04, 1.98, 0.76),
+      this.mats.oakStairs
+    );
+    kitchenLeafFrame.position.z = 0.38;
+    const kitchenLeafGlass = new THREE.Mesh(
+      new THREE.BoxGeometry(0.045, 1.32, 0.52),
+      this.mats.glassOrnamental
+    );
+    kitchenLeafGlass.position.set(0, 0.14, 0.38);
+    kitchenDoorPivot.add(kitchenLeafFrame, kitchenLeafGlass);
+    kitchenDoorPivot.rotation.y = 1.15; // otwarte do kuchni
+    group.add(kitchenDoorPivot);
 
     // f) Charakterystyczne detale ze zdjęcia nr 1:
     // - Kwietnik z rośliną obok pierwszego biegu schodów i drzwi piwnicznych (X = +0.08, Z = -1.48)
@@ -1436,15 +1749,101 @@ export class BuildingBuilder {
   }
 
   _buildFirstFloorInteriors(group, y0, options) {
-    // 1. Wanna i umywalka w Łazience (wg zdjęcia CAM04971G0-PR0284-STILL017)
+    // 1. Wanna i umywalka w Łazience (5,06 m², widoczne przez otwarte drzwi na zdjęciu nr 4!)
     const bathTub = new THREE.Mesh(
       new THREE.BoxGeometry(1.65, 0.56, 0.72),
       this.mats.windowFrameWhite
     );
-    bathTub.position.set(3.15, y0 + 0.28, -0.82);
+    bathTub.position.set(3.25, y0 + 0.28, -0.82);
     group.add(bathTub);
 
-    // 2. Biały żeliwny stolik i krzesła ogrodowe na Tarasie I piętra (wg zdjęcia CAM04971G0-PR0284-STILL021)
+    // 2. Stolarka drzwiowa i boazeria wokół korytarza I piętra (3,76 m², zgodnie ze zdjęciami 3 i 4):
+    // a) Zamknięte białe drzwi do WC I piętra (0,80 m²) z kwadratowym okienkiem z mrożonego szkła (Z = -1.35 m, X = +1.42 m)
+    const wc1DoorLeaf = new THREE.Mesh(
+      new THREE.BoxGeometry(0.58, 1.96, 0.04),
+      this.mats.windowFrameWhite
+    );
+    wc1DoorLeaf.position.set(1.42, y0 + 0.98, -1.35);
+    const wc1Glass = new THREE.Mesh(
+      new THREE.BoxGeometry(0.28, 0.34, 0.05),
+      this.mats.glassOrnamental
+    );
+    wc1Glass.position.set(1.42, y0 + 1.42, -1.35);
+    group.add(wc1DoorLeaf, wc1Glass);
+
+    // b) Uchylone białe przeszklone drzwi do Łazienki (5,06 m²) na X = +1.95 m (Z od -2.20 do -1.45 m, w centrum zdjęcia nr 4!)
+    const bathDoorPivot = new THREE.Group();
+    bathDoorPivot.position.set(1.94, y0 + 0.98, -2.18);
+    const bathLeaf = new THREE.Mesh(
+      new THREE.BoxGeometry(0.04, 1.96, 0.72),
+      this.mats.windowFrameWhite
+    );
+    bathLeaf.position.z = 0.36;
+    const bathGlass = new THREE.Mesh(
+      new THREE.BoxGeometry(0.05, 1.15, 0.42),
+      this.mats.glassOrnamental
+    );
+    bathGlass.position.set(0, 0.16, 0.36);
+    bathDoorPivot.add(bathLeaf, bathGlass);
+    bathDoorPivot.rotation.y = -0.38; // lekko uchylone jak na zdjęciu nr 4
+    group.add(bathDoorPivot);
+
+    // c) Otwarte drzwi do Sypialni Wschodniej (16,58 m²) na Z = -2.95 m (X od +1.08 do +1.88 m, zgodnie z detalem korytarza!)
+    const eastBedDoorPivot = new THREE.Group();
+    eastBedDoorPivot.position.set(1.10, y0 + 0.98, -2.98);
+    const eastBedLeaf = new THREE.Mesh(
+      new THREE.BoxGeometry(0.76, 1.96, 0.04),
+      this.mats.windowFrameWhite
+    );
+    eastBedLeaf.position.x = 0.38;
+    eastBedDoorPivot.add(eastBedLeaf);
+    eastBedDoorPivot.rotation.y = 1.25; // otwarte do sypialni wschodniej
+    group.add(eastBedDoorPivot);
+
+    // d) Białe drzwi z górnym przeszkleniem do Sypialni Głównej (25,58 m²) na X = -1.00 m (Z od -3.01 do -2.21 m,
+    //    na końcu 73 cm przejścia przed schodami strychowymi – dokładnie jak na załączonym rzucie korytarza!)
+    const masterDoorPivot = new THREE.Group();
+    masterDoorPivot.position.set(-1.02, y0 + 0.98, -2.23);
+    const masterLeaf = new THREE.Mesh(
+      new THREE.BoxGeometry(0.04, 1.96, 0.76),
+      this.mats.windowFrameWhite
+    );
+    masterLeaf.position.z = -0.38;
+    const masterGlass = new THREE.Mesh(
+      new THREE.BoxGeometry(0.05, 0.55, 0.50),
+      this.mats.glassOrnamental
+    );
+    masterGlass.position.set(0, 0.45, -0.38);
+    masterDoorPivot.add(masterLeaf, masterGlass);
+    masterDoorPivot.rotation.y = -0.85; // uchylone do wnętrza sypialni głównej
+    group.add(masterDoorPivot);
+
+    // e) Szafa wnękowa Sypialni Głównej (szer. 63 cm × dł. 282 cm, oznaczona przekątnymi na rzucie 1966 r.:
+    //    X od -0.61 do -0.04 m przy ścianie działowej X = +0.02 m, Z od -5.68 do -3.12 m, z 50 cm przejścia obok!)
+    const builtInWardrobe = new THREE.Mesh(
+      new THREE.BoxGeometry(0.58, 2.45, 2.56),
+      this.mats.oakStairs
+    );
+    builtInWardrobe.position.set(-0.33, y0 + 1.225, -4.40);
+    builtInWardrobe.castShadow = true;
+    builtInWardrobe.receiveShadow = true;
+    group.add(builtInWardrobe);
+
+    // f) Ciemna boazeria ścienna na pełnej ścianie północnej korytarza I piętra (Z = -2.96 m, X od -0.95 do +1.02 m)
+    //    oraz wzdłuż 30 cm ścianki wschodniej (X = +1.88 m, Z od -2.95 do -2.35 m), dokładnie jak na zdjęciach 3 i 4!
+    const f1WainscotCorridor = new THREE.Mesh(
+      new THREE.BoxGeometry(1.96, 1.35, 0.02),
+      this.mats.wainscotingWood
+    );
+    f1WainscotCorridor.position.set(0.03, y0 + 0.675, -2.96);
+    const f1WainscotAlcove = new THREE.Mesh(
+      new THREE.BoxGeometry(0.02, 1.15, 0.58),
+      this.mats.wainscotingWood
+    );
+    f1WainscotAlcove.position.set(1.88, y0 + 0.575, -2.65);
+    group.add(f1WainscotCorridor, f1WainscotAlcove);
+
+    // 3. Biały żeliwny stolik i krzesła ogrodowe na Tarasie I piętra (wg zdjęcia CAM04971G0-PR0284-STILL021)
     if (options.includeVeranda1966) {
       const gardenSet = new THREE.Group();
       gardenSet.position.set(-6.85, y0, -3.10);

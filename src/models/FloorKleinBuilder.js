@@ -145,12 +145,14 @@ export class FloorKleinBuilder {
     addCeramicBay(3.15, 4.30, zNorthWallInner, zSouthWallInner);
     addCeramicBay(4.30, 5.15, zNorthWallInner, zSouthWallInner);
 
-    // Pasmo środkowe obok klatki schodowej (część północna Z od -5.85 do -2.85 m, z otworem klatki po południu)
-    addCeramicBay(-1.10, -0.10, zNorthWallInner, zStairTrimmer);
-    addCeramicBay(-0.10, 0.90, zNorthWallInner, zStairTrimmer);
+    // Pasmo środkowe obok klatki schodowej (część północna Z od -5.85 do wymianu, z otworem klatki po południu)
+    const isBasementSlab = levelName === 'Klein_Over_Basement';
+    const zWestBayEnd = isBasementSlab ? -2.65 : -2.21;
+    addCeramicBay(-1.10, -0.02, zNorthWallInner, zWestBayEnd);
+    addCeramicBay(-0.02, 0.90, zNorthWallInner, zStairTrimmer);
     addCeramicBay(0.90, 2.05, zNorthWallInner, zStairTrimmer);
-    // Podest wyjściowy na półpiętrze po wschodniej stronie słupa centralnego (X od +0.02 do +1.05, Z od -2.85 do -2.01)
-    addCeramicBay(0.02, 1.05, zStairTrimmer, -2.01);
+    // W stropie nad piwnicą przejście korytarza do drzwi piwnicznych sięga Z = -1.35 m, a na wyższych stropach podest kończy się na Z = -1.92 m
+    addCeramicBay(0.02, 1.05, zStairTrimmer, isBasementSlab ? -1.35 : -1.92);
     // Podest WC przy klatce (X od +1.05 do +2.05, Z od -2.85 do -0.25)
     addCeramicBay(1.05, 2.05, zStairTrimmer, zSouthWallInner);
 

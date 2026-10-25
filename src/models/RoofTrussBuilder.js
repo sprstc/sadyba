@@ -99,18 +99,18 @@ export class RoofTrussBuilder {
 
       // Podwalina pod stolce (14x12 cm)
       const solePlate = new THREE.Mesh(
-        new THREE.BoxGeometry(0.14, 0.12, 4.40),
+        new THREE.BoxGeometry(0.14, 0.12, 3.90),
         m.get('pineTimber')
       );
-      solePlate.position.set(xPos, yEaves + 0.06, -2.20);
+      solePlate.position.set(xPos, yEaves + 0.06, -2.15);
       roofTrussGroup.add(solePlate);
 
-      // Płatew pośrednia (12x18 cm)
+      // Płatew pośrednia (12x18 cm – docięta do płatwi poprzecznej Z = -4.15 m, bez wystawania przez połać!)
       const purlin = new THREE.Mesh(
-        new THREE.BoxGeometry(0.12, 0.18, 4.50),
+        new THREE.BoxGeometry(0.12, 0.18, 3.95),
         m.get('pineTimber')
       );
-      purlin.position.set(xPos, yPurlin, -2.25);
+      purlin.position.set(xPos, yPurlin, -2.15);
       purlin.castShadow = true;
       purlin.name = 'Płatew pośrednia 12×18 cm';
       roofTrussGroup.add(purlin);
