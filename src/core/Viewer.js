@@ -46,8 +46,9 @@ export class Viewer {
     const rendererOptions = {
       antialias: !isMobile,
       powerPreference: isMobile ? 'default' : 'high-performance',
-      precision: isMobile ? 'mediump' : 'highp',
       alpha: false,
+      stencil: false,
+      depth: true,
     };
 
     try {
@@ -57,11 +58,15 @@ export class Viewer {
       this.renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'default' });
     }
 
+    this._lastW = width;
+    this._lastH = height;
+    this.contextLost = false;
+
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobile ? 1.25 : 2));
     this.renderer.setSize(width, height);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobile ? 1.5 : 2));
     this.renderer.setClearColor(0x0c1118, 1);
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = isMobile ? THREE.BasicShadowMap : THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.enabled = !isMobile;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.08;
 
@@ -77,11 +82,13 @@ export class Viewer {
     // Bezpieczna obsługa utraty i przywrócenia kontekstu GPU na urządzeniach mobilnych
     this.canvas.addEventListener('webglcontextlost', (event) => {
       event.preventDefault();
+      this.contextLost = true;
       console.warn('Three.js: WebGL Context Lost.');
     }, false);
 
     this.canvas.addEventListener('webglcontextrestored', () => {
       console.info('Three.js: WebGL Context Restored.');
+      this.contextLost = false;
       this.renderer.render(this.scene, this.camera);
     }, false);
 
@@ -154,18 +161,19 @@ export class Viewer {
     this.scene.add(this.ambientLight);
 
     this.sunLight = new THREE.DirectionalLight(0xfff7ed, 2.2);
-    this.sunLight.castShadow = true;
-    const shadowMapDim = this.isMobile ? 1024 : 2048;
-    this.sunLight.shadow.mapSize.width = shadowMapDim;
-    this.sunLight.shadow.mapSize.height = shadowMapDim;
-    this.sunLight.shadow.camera.near = 1.0;
-    this.sunLight.shadow.camera.far = 80.0;
-    const d = 22;
-    this.sunLight.shadow.camera.left = -d;
-    this.sunLight.shadow.camera.right = d;
-    this.sunLight.shadow.camera.top = d;
-    this.sunLight.shadow.camera.bottom = -d;
-    this.sunLight.shadow.bias = -0.0005;
+    this.sunLight.castShadow = !this.isMobile;
+    if (!this.isMobile) {
+      this.sunLight.shadow.mapSize.width = 2048;
+      this.sunLight.shadow.mapSize.height = 2048;
+      this.sunLight.shadow.camera.near = 1.0;
+      this.sunLight.shadow.camera.far = 80.0;
+      const d = 22;
+      this.sunLight.shadow.camera.left = -d;
+      this.sunLight.shadow.camera.right = d;
+      this.sunLight.shadow.camera.top = d;
+      this.sunLight.shadow.camera.bottom = -d;
+      this.sunLight.shadow.bias = -0.0005;
+    }
     this.scene.add(this.sunLight);
 
     // Ciepłe doświetlenie wnętrz parteru i piętra
@@ -409,6 +417,9 @@ export class Viewer {
     const width = this.container.clientWidth || window.innerWidth;
     const height = this.container.clientHeight || window.innerHeight;
     if (width === 0 || height === 0) return;
+    if (width === this._lastW && height === this._lastH) return;
+    this._lastW = width;
+    this._lastH = height;
     const aspect = width / height;
     this.camera.aspect = aspect;
     if (aspect < 1.0 && this.camera.fov < 50) {
@@ -565,6 +576,7 @@ export class Viewer {
   start() {
     const animate = () => {
       requestAnimationFrame(animate);
+      if (this.contextLost) return;
       const dt = Math.min(this.clock.getDelta(), 0.1);
 
       this.cameraManager.update(dt);

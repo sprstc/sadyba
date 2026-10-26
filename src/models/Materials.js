@@ -19,20 +19,40 @@ export class MaterialsManager {
   }
 
   /**
-   * Pomocnicza funkcja tworząca powtarzalną teksturę CanvasTexture.
+   * Pomocnicza funkcja tworząca powtarzalną teksturę DataTexture z bufora CPU.
+   * Użycie willReadFrequently + DataTexture + zwolnienie <canvas> (width=0) eliminuje
+   * błąd przepełnienia kontekstów GPU (Accelerated 2D Canvas + WebGL SharedImage crash) w Chrome na Androidzie!
    */
   _createCanvasTexture(width, height, drawFn, repeatX = 1, repeatY = 1) {
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d');
-    drawFn(ctx, width, height);
+    const isMobile =
+      typeof navigator !== 'undefined' &&
+      /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+    const scale = isMobile && width > 256 ? 0.5 : 1.0;
+    const w = Math.max(64, Math.floor(width * scale));
+    const h = Math.max(64, Math.floor(height * scale));
 
-    const tex = new THREE.CanvasTexture(canvas);
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    drawFn(ctx, w, h);
+
+    const imgData = ctx.getImageData(0, 0, w, h);
+    const rawBytes = new Uint8Array(imgData.data.buffer.slice(0));
+
+    // Natychmiast zwolnij pamięć pomocniczego elementu 2D <canvas>
+    canvas.width = 0;
+    canvas.height = 0;
+
+    const tex = new THREE.DataTexture(rawBytes, w, h, THREE.RGBAFormat);
+    tex.flipY = true;
     tex.wrapS = THREE.RepeatWrapping;
     tex.wrapT = THREE.RepeatWrapping;
     tex.repeat.set(repeatX, repeatY);
     tex.colorSpace = THREE.SRGBColorSpace;
+    tex.generateMipmaps = !isMobile;
+    tex.minFilter = isMobile ? THREE.LinearFilter : THREE.LinearMipmapLinearFilter;
+    tex.magFilter = THREE.LinearFilter;
     tex.needsUpdate = true;
     return tex;
   }
@@ -406,23 +426,23 @@ export class MaterialsManager {
         roughness: 0.42,
         metalness: 0.68,
       }),
-      glassClear: new THREE.MeshPhysicalMaterial({
+      glassClear: new THREE.MeshStandardMaterial({
         name: 'Szkło okienne przezierne',
         color: 0xdbeafe,
         transparent: true,
         opacity: 0.34,
-        roughness: 0.08,
+        roughness: 0.12,
         metalness: 0.1,
-        reflectivity: 0.9,
         depthWrite: false,
         side: THREE.DoubleSide,
       }),
-      glassOrnamental: new THREE.MeshPhysicalMaterial({
+      glassOrnamental: new THREE.MeshStandardMaterial({
         name: 'Szkło ornamentowe drzwi salonu',
         color: 0xfef3c7,
         transparent: true,
         opacity: 0.52,
         roughness: 0.35,
+        metalness: 0.05,
         depthWrite: false,
         side: THREE.DoubleSide,
       }),

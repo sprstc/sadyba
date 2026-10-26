@@ -31,7 +31,6 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   viewer.start();
 
-  // Dodatkowe odświeżenie geometrii po ustabilizowaniu paska adresu i viewportu na Androidzie
-  setTimeout(() => viewer.handleResize(), 100);
-  setTimeout(() => viewer.handleResize(), 350);
+  // Odświeżenie geometrii tylko jeśli wymiary faktycznie uległy zmianie po schowaniu klawiatury
+  setTimeout(() => viewer.handleResize(), 250);
 });

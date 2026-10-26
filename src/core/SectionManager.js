@@ -9,7 +9,7 @@ import * as THREE from 'three';
 export class SectionManager {
   constructor(renderer) {
     this.renderer = renderer;
-    this.renderer.localClippingEnabled = true;
+    this.renderer.localClippingEnabled = false;
 
     // Płaszczyzny tnące skierowane do wnętrza bryły
     this.planeX = new THREE.Plane(new THREE.Vector3(-1, 0, 0), 12.0);
@@ -67,5 +67,6 @@ export class SectionManager {
     if (this.state.z > this.limits.zMin) activePlanes.push(this.planeZ);
 
     this.renderer.clippingPlanes = activePlanes;
+    this.renderer.localClippingEnabled = activePlanes.length > 0;
   }
 }
