@@ -118,6 +118,7 @@ export class BuildingBuilder {
       const mesh = new THREE.Mesh(geo, mat);
       mesh.position.set((x1 + x2) * 0.5, y0 + 0.02, (z1 + z2) * 0.5);
       mesh.receiveShadow = true;
+      mesh.userData.isFloorSlab = true;
       group.add(mesh);
       walkables.push(mesh);
     };
@@ -328,6 +329,7 @@ export class BuildingBuilder {
       closetBox.position.set(xSide, (y0 + y1) * 0.5, -5.745);
       closetBox.castShadow = true;
       closetBox.receiveShadow = true;
+      closetBox.userData.isWallCollider = true;
       group.add(closetBox);
     }
 
@@ -468,6 +470,7 @@ export class BuildingBuilder {
       const mesh = new THREE.Mesh(geo, mat);
       mesh.position.set((x1 + x2) * 0.5, y0 + 0.02, (z1 + z2) * 0.5);
       mesh.receiveShadow = true;
+      mesh.userData.isFloorSlab = true;
       group.add(mesh);
       walkables.push(mesh);
     };
@@ -721,6 +724,7 @@ export class BuildingBuilder {
       this.mats.wainscotingWood
     );
     stairCurbWall.position.set(1.00, y0 + 0.48, -1.635);
+    stairCurbWall.userData.isWallCollider = true;
     group.add(stairCurbWall);
 
     // 5) Klasyczny profilowany GZYMS PODOKAPOWY CIĄGNIONY (Cornice) + rynny i rury spustowe
@@ -746,6 +750,7 @@ export class BuildingBuilder {
       const mesh = new THREE.Mesh(geo, this.mats.atticPineFloor);
       mesh.position.set((x1 + x2) * 0.5, y0 + 0.02, (z1 + z2) * 0.5);
       mesh.receiveShadow = true;
+      mesh.userData.isFloorSlab = true;
       group.add(mesh);
       walkables.push(mesh);
     };
@@ -756,6 +761,38 @@ export class BuildingBuilder {
     addPineFloor(0.02, 1.05, -2.21, -1.80);
     addPineFloor(xRear, -0.95, -2.21, zSouth);
 
+    // Drewniana balustrada ochronna wokół otworu schodowego na poddaszu (chroni przed wpadnięciem do klatki schodowej)
+    const addAtticStairRail = (x1, z1, x2, z2) => {
+      const lenX = Math.abs(x2 - x1);
+      const lenZ = Math.abs(z2 - z1);
+      const isX = lenX >= lenZ;
+      const railH = 0.92;
+      const topBar = new THREE.Mesh(
+        new THREE.BoxGeometry(isX ? lenX : 0.06, 0.06, isX ? 0.06 : lenZ),
+        this.mats.oakStairs
+      );
+      topBar.position.set((x1 + x2) * 0.5, y0 + railH, (z1 + z2) * 0.5);
+      group.add(topBar);
+
+      const post1 = new THREE.Mesh(new THREE.BoxGeometry(0.07, railH, 0.07), this.mats.oakStairs);
+      post1.position.set(x1, y0 + railH * 0.5, z1);
+      const post2 = new THREE.Mesh(new THREE.BoxGeometry(0.07, railH, 0.07), this.mats.oakStairs);
+      post2.position.set(x2, y0 + railH * 0.5, z2);
+      group.add(post1, post2);
+
+      const col = new THREE.Mesh(
+        new THREE.BoxGeometry(isX ? lenX : 0.08, railH, isX ? 0.08 : lenZ),
+        new THREE.MeshBasicMaterial({ visible: false })
+      );
+      col.position.set((x1 + x2) * 0.5, y0 + railH * 0.5, (z1 + z2) * 0.5);
+      col.userData.isObstacleCollider = true;
+      group.add(col);
+    };
+    // Zachodnia, północno-zachodnia i wschodnia krawędź otworu schodowego (wyjście ze schodów na X in [0.02, 0.98], Z = -1.80 otwarte!)
+    addAtticStairRail(-0.95, -2.21, -0.95, -0.38);
+    addAtticStairRail(-0.95, -2.21, 0.02, -2.21);
+    addAtticStairRail(1.02, -1.80, 1.02, -0.38);
+
     // Ścianka kolankowa obwodowa (wys. 0.45 m pod murłatę)
     const kneeH = 0.32;
     const addKneeWall = (x1, z1, x2, z2) => {
@@ -765,11 +802,31 @@ export class BuildingBuilder {
       const geo = new THREE.BoxGeometry(isX ? lenX : 0.25, kneeH, isX ? 0.25 : lenZ);
       const mesh = new THREE.Mesh(geo, this.mats.facadePlaster);
       mesh.position.set((x1 + x2) * 0.5, y0 + kneeH * 0.5, (z1 + z2) * 0.5);
+      mesh.userData.isWallCollider = true;
       group.add(mesh);
     };
     addKneeWall(xRear, zNorth, xFront, zNorth);
     addKneeWall(xFront, zNorth, xFront, 0);
     addKneeWall(xRear, zNorth, xRear, 0);
+
+    // Niewidoczna strefa kolizyjna niskiego okapu na poddaszu (aby awatar nie wchodził głową w skosy połaci dachowej przy murłacie)
+    const addEavesCollider = (x1, z1, x2, z2) => {
+      const lenX = Math.abs(x2 - x1);
+      const lenZ = Math.abs(z2 - z1);
+      const isX = lenX >= lenZ;
+      const box = new THREE.Mesh(
+        new THREE.BoxGeometry(isX ? lenX : 0.55, 1.85, isX ? 0.55 : lenZ),
+        new THREE.MeshBasicMaterial({ visible: false })
+      );
+      box.position.set((x1 + x2) * 0.5, y0 + 0.925, (z1 + z2) * 0.5);
+      box.userData.isObstacleCollider = true;
+      group.add(box);
+    };
+    addEavesCollider(xRear, zNorth + 0.25, xFront, zNorth + 0.25);
+    addEavesCollider(xFront - 0.25, zNorth, xFront - 0.25, 0);
+    addEavesCollider(xRear + 0.25, zNorth, xRear + 0.25, 0);
+    // Ściana południowa kominowa na poddaszu (Z = -0.19 m)
+    addEavesCollider(xRear, -0.15, xFront, -0.15);
   }
 
   // ==========================================================================
@@ -821,7 +878,23 @@ export class BuildingBuilder {
     centralColumn.position.set(xPivot, yBottom + columnHeight * 0.5, zPivot);
     centralColumn.castShadow = true;
     centralColumn.receiveShadow = true;
+    centralColumn.userData.isWallCollider = true;
     group.add(centralColumn);
+
+    // Pionowa bariera kolizyjna balustrady wzdłuż biegu dolnego (od zStart do słupa centralnego zPivot)
+    // Chroni awatara przed wejściem z boku na schody lub wypadnięciem przez balustradę schodową
+    const railBarrierLen = Math.abs(zPivot - zStart);
+    const railBarrier = new THREE.Mesh(
+      new THREE.BoxGeometry(0.06, totalRise * 0.55 + 0.95, railBarrierLen),
+      new THREE.MeshBasicMaterial({ visible: false })
+    );
+    railBarrier.position.set(
+      xPivot,
+      yBottom + (totalRise * 0.55 + 0.95) * 0.5,
+      (zStart + zPivot) * 0.5
+    );
+    railBarrier.userData.isObstacleCollider = true;
+    group.add(railBarrier);
 
     // Pionowa listwa cokołowa na słupie centralnym
     const columnTrim = new THREE.Mesh(
@@ -1175,6 +1248,21 @@ export class BuildingBuilder {
     handrail.rotation.z = -Math.atan2(yGroundFloor, stepsCount * stepRun);
     group.add(handrail);
 
+    // Bariery ochronne wokół podestu wejściowego (+1.60 m) i biegu schodów zewnętrznych
+    const addPorchCollider = (cx, cz, sx, sz) => {
+      const m = new THREE.Mesh(
+        new THREE.BoxGeometry(sx, yGroundFloor + 0.95, sz),
+        new THREE.MeshBasicMaterial({ visible: false })
+      );
+      m.position.set(cx, (yGroundFloor + 0.95) * 0.5, cz);
+      m.userData.isObstacleCollider = true;
+      group.add(m);
+    };
+    // Zachodnia i północna krawędź podestu ganku oraz północna krawędź stopni
+    addPorchCollider(xCenter - porchWidth * 0.5, (zWall + zOuter) * 0.5, 0.08, porchDepth);
+    addPorchCollider(xCenter, zOuter, porchWidth, 0.08);
+    addPorchCollider(xStart + (stepsCount * stepRun) * 0.5, zWall - 1.16, stepsCount * stepRun, 0.08);
+
     // 4. Daszek nad wejściem północnym kryty dachówką karpiówką (wsparty na 2 słupkach stalowych)
     // Widoczny wyraźnie na zdjęciu PXL_20260815_083108470.jpg oraz Elewacji Północnej 1966 str. 8
     const postGeo = new THREE.CylinderGeometry(0.035, 0.035, 2.35, 10);
@@ -1266,6 +1354,15 @@ export class BuildingBuilder {
         post.position.set(px, pyBase + 0.43, zRail);
         group.add(post);
       }
+
+      // Niewidoczna bariera boczna poręczy schodów ogrodowych (chroni awatara przed spadnięciem z boku stopni)
+      const sideBarrier = new THREE.Mesh(
+        new THREE.BoxGeometry(totalLength, landingH + 0.90, 0.08),
+        new THREE.MeshBasicMaterial({ visible: false })
+      );
+      sideBarrier.position.set(xWall - totalLength * 0.5, (landingH + 0.90) * 0.5, zRail);
+      sideBarrier.userData.isObstacleCollider = true;
+      group.add(sideBarrier);
     }
 
     return group;
@@ -1283,7 +1380,24 @@ export class BuildingBuilder {
     );
     privacyWall.position.set((xVeranda + xMainRear) * 0.5, yFloor + 0.875, zSouth - 0.10);
     privacyWall.castShadow = true;
+    privacyWall.userData.isWallCollider = true;
     group.add(privacyWall);
+
+    // Niewidoczne bryły kolizyjne balustrady zachodniej i północnej tarasu I piętra (pełna wysokość 1.05 m)
+    const westRailCollider = new THREE.Mesh(
+      new THREE.BoxGeometry(0.10, 1.05, width),
+      new THREE.MeshBasicMaterial({ visible: false })
+    );
+    westRailCollider.position.set(xVeranda + 0.06, yFloor + 0.525, -width * 0.5);
+    westRailCollider.userData.isObstacleCollider = true;
+
+    const northRailCollider = new THREE.Mesh(
+      new THREE.BoxGeometry(depth, 1.05, 0.10),
+      new THREE.MeshBasicMaterial({ visible: false })
+    );
+    northRailCollider.position.set((xVeranda + xMainRear) * 0.5, yFloor + 0.525, zNorth + 0.06);
+    northRailCollider.userData.isObstacleCollider = true;
+    group.add(westRailCollider, northRailCollider);
 
     // Pochwyt zachodni i północny
     const topRailWest = new THREE.Mesh(
@@ -1383,6 +1497,7 @@ export class BuildingBuilder {
       }
       mesh.castShadow = true;
       mesh.receiveShadow = true;
+      mesh.userData.isWallCollider = true;
       parentGroup.add(mesh);
     };
 
@@ -1421,6 +1536,12 @@ export class BuildingBuilder {
     } else {
       joinery.position.set(fixedCoord, yMid, cMid);
       joinery.rotation.y = Math.PI * 0.5;
+    }
+
+    if (op.type === 'window2' || op.type === 'window3') {
+      joinery.userData.isWindowCollider = true;
+    } else {
+      joinery.userData.isPassableDoor = true;
     }
 
     if (op.type === 'window2' || op.type === 'window3') {
@@ -1635,6 +1756,7 @@ export class BuildingBuilder {
       this.mats.oakStairs
     );
     phoneStand.position.set(-0.80, y0 + 0.37, -4.98);
+    phoneStand.userData.isObstacleCollider = true;
     group.add(phoneStand);
 
     // Żeberkowy grzejnik w korytarzu przy ścianie pokoju frontowego (widoczny w lewym górnym rogu zdjęcia z wnętrza!)
@@ -1652,6 +1774,7 @@ export class BuildingBuilder {
       this.mats.doorWood
     );
     basementDoorLeaf.position.set(0.52, y0 + 0.99, -1.35);
+    basementDoorLeaf.userData.isPassableDoor = true;
     group.add(basementDoorLeaf);
 
     // 2. Zamknięte skrzydło drzwi do WC (0,60 × 2,00 m na Z = -1.35 m, X = +1.45 m – u dołu zdjęcia z wnętrza!)
@@ -1660,11 +1783,13 @@ export class BuildingBuilder {
       this.mats.doorWood
     );
     wcDoorLeaf.position.set(1.45, y0 + 0.99, -1.35);
+    wcDoorLeaf.userData.isPassableDoor = true;
     group.add(wcDoorLeaf);
 
     // 3. Otwarte przeszklone skrzydło drzwi do Pokoju frontowego (12,52 m²) na Z = -2.45 m (X od +1.10 do +1.90 m)
     //    Uchylone do wnętrza pokoju, z szybą ornamentową (dokładnie jak u góry zdjęcia z wnętrza!)
     const studyDoorPivot = new THREE.Group();
+    studyDoorPivot.userData.isPassableDoor = true;
     studyDoorPivot.position.set(1.12, y0 + 1.00, -2.48);
     const studyLeafFrame = new THREE.Mesh(
       new THREE.BoxGeometry(0.76, 1.98, 0.04),
@@ -1682,6 +1807,7 @@ export class BuildingBuilder {
 
     // 4. Otwarte przeszklone skrzydło drzwi do Kuchni (5,96 m²) na X = +1.95 m (Z od -2.30 do -1.50 m)
     const kitchenDoorPivot = new THREE.Group();
+    kitchenDoorPivot.userData.isPassableDoor = true;
     kitchenDoorPivot.position.set(1.98, y0 + 1.00, -2.28);
     const kitchenLeafFrame = new THREE.Mesh(
       new THREE.BoxGeometry(0.04, 1.98, 0.76),
@@ -1732,6 +1858,7 @@ export class BuildingBuilder {
     tableGroup.position.set(-2.85, y0, -2.55);
     const tableTop = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.05, 0.90), this.mats.oakStairs);
     tableTop.position.y = 0.76;
+    tableTop.userData.isObstacleCollider = true;
     tableGroup.add(tableTop);
     for (const [dx, dz] of [[-0.62, -0.38], [0.62, -0.38], [-0.62, 0.38], [0.62, 0.38]]) {
       const leg = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.75, 0.06), this.mats.oakStairs);
@@ -1744,6 +1871,7 @@ export class BuildingBuilder {
     if (options.includeVeranda1966) {
       const vTable = new THREE.Mesh(new THREE.BoxGeometry(1.50, 0.74, 0.85), this.mats.windowFrameWhite);
       vTable.position.set(-6.85, y0 + 0.37, -3.20);
+      vTable.userData.isObstacleCollider = true;
       group.add(vTable);
     }
   }
@@ -1755,6 +1883,7 @@ export class BuildingBuilder {
       this.mats.windowFrameWhite
     );
     bathTub.position.set(3.25, y0 + 0.28, -0.82);
+    bathTub.userData.isObstacleCollider = true;
     group.add(bathTub);
 
     // 2. Stolarka drzwiowa i boazeria wokół korytarza I piętra (3,76 m², zgodnie ze zdjęciami 3 i 4):
@@ -1764,15 +1893,18 @@ export class BuildingBuilder {
       this.mats.windowFrameWhite
     );
     wc1DoorLeaf.position.set(1.42, y0 + 0.98, -1.35);
+    wc1DoorLeaf.userData.isPassableDoor = true;
     const wc1Glass = new THREE.Mesh(
       new THREE.BoxGeometry(0.28, 0.34, 0.05),
       this.mats.glassOrnamental
     );
     wc1Glass.position.set(1.42, y0 + 1.42, -1.35);
+    wc1Glass.userData.isPassableDoor = true;
     group.add(wc1DoorLeaf, wc1Glass);
 
     // b) Uchylone białe przeszklone drzwi do Łazienki (5,06 m²) na X = +1.95 m (Z od -2.20 do -1.45 m, w centrum zdjęcia nr 4!)
     const bathDoorPivot = new THREE.Group();
+    bathDoorPivot.userData.isPassableDoor = true;
     bathDoorPivot.position.set(1.94, y0 + 0.98, -2.18);
     const bathLeaf = new THREE.Mesh(
       new THREE.BoxGeometry(0.04, 1.96, 0.72),
@@ -1790,6 +1922,7 @@ export class BuildingBuilder {
 
     // c) Otwarte drzwi do Sypialni Wschodniej (16,58 m²) na Z = -2.95 m (X od +1.08 do +1.88 m, zgodnie z detalem korytarza!)
     const eastBedDoorPivot = new THREE.Group();
+    eastBedDoorPivot.userData.isPassableDoor = true;
     eastBedDoorPivot.position.set(1.10, y0 + 0.98, -2.98);
     const eastBedLeaf = new THREE.Mesh(
       new THREE.BoxGeometry(0.76, 1.96, 0.04),
@@ -1803,6 +1936,7 @@ export class BuildingBuilder {
     // d) Białe drzwi z górnym przeszkleniem do Sypialni Głównej (25,58 m²) na X = -1.00 m (Z od -3.01 do -2.21 m,
     //    na końcu 73 cm przejścia przed schodami strychowymi – dokładnie jak na załączonym rzucie korytarza!)
     const masterDoorPivot = new THREE.Group();
+    masterDoorPivot.userData.isPassableDoor = true;
     masterDoorPivot.position.set(-1.02, y0 + 0.98, -2.23);
     const masterLeaf = new THREE.Mesh(
       new THREE.BoxGeometry(0.04, 1.96, 0.76),
@@ -1827,6 +1961,7 @@ export class BuildingBuilder {
     builtInWardrobe.position.set(-0.33, y0 + 1.225, -4.40);
     builtInWardrobe.castShadow = true;
     builtInWardrobe.receiveShadow = true;
+    builtInWardrobe.userData.isWallCollider = true;
     group.add(builtInWardrobe);
 
     // f) Ciemna boazeria ścienna na pełnej ścianie północnej korytarza I piętra (Z = -2.96 m, X od -0.95 do +1.02 m)

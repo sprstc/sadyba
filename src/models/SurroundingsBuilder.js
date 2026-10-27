@@ -120,6 +120,7 @@ export class SurroundingsBuilder {
       wall.position.set(8.00, -0.42, signZ * zWall);
       wall.castShadow = true;
       wall.receiveShadow = true;
+      wall.userData.isWallCollider = true;
       group.add(wall);
 
       // Czapka muru oporowego
@@ -201,6 +202,7 @@ export class SurroundingsBuilder {
         m.get('steelRailing')
       );
       panel.position.set(xFence, 0.92, signZ * midZ);
+      panel.userData.isObstacleCollider = true;
       group.add(panel);
     }
 
@@ -240,6 +242,7 @@ export class SurroundingsBuilder {
       m.get('steelRailing')
     );
     northFence.position.set(-4.565, 0.75, signZ * -10.52);
+    northFence.userData.isObstacleCollider = true;
     group.add(northFence);
 
     const westFence = new THREE.Mesh(
@@ -247,6 +250,7 @@ export class SurroundingsBuilder {
       m.get('steelRailing')
     );
     westFence.position.set(-19.63, 0.75, signZ * -5.26);
+    westFence.userData.isObstacleCollider = true;
     group.add(westFence);
   }
 

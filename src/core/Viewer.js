@@ -103,6 +103,14 @@ export class Viewer {
       this.canvas,
       this.avatar,
       (hudData) => {
+        if (
+          hudData.walkMode &&
+          typeof hudData.playerY === 'number' &&
+          this.sectionManager &&
+          this.sectionManager.state.y < hudData.playerY + 2.1
+        ) {
+          this.sectionManager.setClipY(12.5);
+        }
         if (this.callbacks.onWalkHudUpdate) this.callbacks.onWalkHudUpdate(hudData);
       }
     );
@@ -344,6 +352,96 @@ export class Viewer {
     if (this.selectedRoomId) {
       this.selectRoomById(this.selectedRoomId, false);
     }
+
+    this.updateWalkColliders();
+  }
+
+  /**
+   * Aktualizuje bryły kolizyjne AABB ścian/przeszkód oraz siatki dla Raycastera kamery TPP,
+   * dzięki czemu ani postać, ani kamera podążająca za nią nie mogą wchodzić w ściany.
+   */
+  updateWalkColliders() {
+    if (!this.cameraManager || !this.segmentBRoot) return;
+
+    this.scene.updateMatrixWorld(true);
+
+    const avatarBoxes = [];
+    const wallBoxes = [];
+    const cameraMeshes = [];
+    const doorMeshes = [];
+
+    const hasFlagInAncestors = (obj, flagName) => {
+      let cur = obj;
+      while (cur && cur !== this.scene) {
+        if (cur.userData && cur.userData[flagName]) return true;
+        cur = cur.parent;
+      }
+      return false;
+    };
+
+    const isHierarchyVisible = (obj) => {
+      let cur = obj;
+      while (cur && cur !== this.scene) {
+        if (!cur.visible) return false;
+        cur = cur.parent;
+      }
+      return true;
+    };
+
+    const isInsideLayer = (obj, layerName) => {
+      let cur = obj;
+      while (cur && cur !== this.scene) {
+        if (cur.name === layerName) return true;
+        cur = cur.parent;
+      }
+      return false;
+    };
+
+    const roots = [this.segmentBRoot, this.surroundingsGroup];
+    if (this.isTwinMode && this.segmentARoot) {
+      roots.push(this.segmentARoot);
+    }
+
+    for (const root of roots) {
+      if (!root || !root.visible) continue;
+      root.traverse((child) => {
+        if (!child.isMesh || !child.geometry) return;
+        if (!isHierarchyVisible(child)) return;
+        if (child.userData && child.userData.roomSpec) return;
+        if (isInsideLayer(child, 'Layer_Vines') || isInsideLayer(child, 'Layer_Dimensions')) return;
+
+        const isPassableDoor = hasFlagInAncestors(child, 'isPassableDoor');
+        if (isPassableDoor) {
+          doorMeshes.push(child);
+          return;
+        }
+
+        const isWall = Boolean(child.userData && child.userData.isWallCollider);
+        const isWin = hasFlagInAncestors(child, 'isWindowCollider');
+        const isObstacle = Boolean(child.userData && child.userData.isObstacleCollider);
+
+        if (isWall || isWin || isObstacle) {
+          const box = new THREE.Box3().setFromObject(child);
+          if (!box.isEmpty()) {
+            avatarBoxes.push(box);
+            if (isWall || isWin) {
+              wallBoxes.push(box);
+            }
+          }
+        }
+
+        if (child.material && child.material.visible !== false) {
+          cameraMeshes.push(child);
+        }
+      });
+    }
+
+    this.cameraManager.setColliders({
+      avatarBoxes,
+      wallBoxes,
+      cameraMeshes,
+      doorMeshes,
+    });
   }
 
   /**
@@ -354,6 +452,7 @@ export class Viewer {
     if (this.segmentARoot) this.segmentARoot.visible = this.isTwinMode;
     if (this.segASurroundings) this.segASurroundings.visible = this.isTwinMode;
     this.setExplodedFactor(this.explodeFactor);
+    this.updateWalkColliders();
     if (this.cameraManager) {
       this.cameraManager.setOrbitCenterForTwinMode(this.isTwinMode);
     }
@@ -388,6 +487,7 @@ export class Viewer {
 
     applyExplode(this.segmentBRoot);
     applyExplode(this.segmentARoot);
+    this.updateWalkColliders();
   }
 
   /**
@@ -402,6 +502,7 @@ export class Viewer {
         if (obj) obj.visible = Boolean(visible);
       });
     }
+    this.updateWalkColliders();
   }
 
   /**

@@ -38,19 +38,19 @@ export class HumanAvatar {
     this.torso.position.set(0, 0.07, 0);
     this.pelvis.add(this.torso);
 
-    const chestMesh = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.52, 0.24), jacketMat);
+    const chestMesh = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.52, 0.22), jacketMat);
     chestMesh.position.set(0, 0.26, 0);
     chestMesh.castShadow = true;
     this.torso.add(chestMesh);
 
     // Koszula pod marynarką
-    const shirtV = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.28, 0.25), shirtMat);
+    const shirtV = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.28, 0.23), shirtMat);
     shirtV.position.set(0, 0.36, 0.005);
     this.torso.add(shirtV);
 
     // Złoty identyfikator inspektora nadzoru budowlanego
     const badge = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.03, 0.01), badgeMat);
-    badge.position.set(0.11, 0.40, 0.125);
+    badge.position.set(0.10, 0.40, 0.115);
     this.torso.add(badge);
 
     // Głowa i szyja (całkowita wysokość 1.80 m)
@@ -81,8 +81,8 @@ export class HumanAvatar {
     this.rightLeg = this.createLeg(pantsMat, shoeMat, -1);
     this.pelvis.add(this.leftLeg.hip, this.rightLeg.hip);
 
-    // Dysk kierunkowy pod stopami
-    const ringGeom = new THREE.RingGeometry(0.24, 0.29, 24);
+    // Dysk kierunkowy pod stopami (mieści się w cylindrze kolizji r = 0.25 m)
+    const ringGeom = new THREE.RingGeometry(0.20, 0.245, 24);
     ringGeom.rotateX(-Math.PI / 2);
     const ringMat = new THREE.MeshBasicMaterial({
       color: 0xd4af37,
@@ -97,9 +97,9 @@ export class HumanAvatar {
 
   createArm(jacketMat, skinMat, side) {
     const shoulder = new THREE.Group();
-    shoulder.position.set(side * 0.24, 0.48, 0);
+    shoulder.position.set(side * 0.205, 0.48, 0);
 
-    const upperArm = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.28, 0.10), jacketMat);
+    const upperArm = new THREE.Mesh(new THREE.BoxGeometry(0.085, 0.28, 0.09), jacketMat);
     upperArm.position.set(0, -0.13, 0);
     upperArm.castShadow = true;
     shoulder.add(upperArm);

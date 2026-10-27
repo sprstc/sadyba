@@ -74,6 +74,7 @@ export class FoundationBuilder {
     const floorMesh = new THREE.Mesh(floorGeo, this.mats.basementFloor);
     floorMesh.position.set((xFront + xMainRear) * 0.5, yFloor - 0.07, -BUILDING_DIMS.SEGMENT_WIDTH * 0.5);
     floorMesh.receiveShadow = true;
+    floorMesh.userData.isFloorSlab = true;
     basementGroup.add(floorMesh);
     walkables.push(floorMesh);
 
@@ -88,6 +89,7 @@ export class FoundationBuilder {
         -BUILDING_DIMS.SEGMENT_WIDTH * 0.5
       );
       verandaSubFloorMesh.receiveShadow = true;
+      verandaSubFloorMesh.userData.isFloorSlab = true;
       verandaSubFloorMesh.name = 'Posadzka pomieszczenia użytkowego pod werandą (12,48 m²)';
       basementGroup.add(verandaSubFloorMesh);
       walkables.push(verandaSubFloorMesh);
@@ -341,6 +343,7 @@ export class FoundationBuilder {
       }
       mesh.castShadow = true;
       mesh.receiveShadow = true;
+      mesh.userData.isWallCollider = true;
       parentGroup.add(mesh);
     };
 
@@ -374,6 +377,7 @@ export class FoundationBuilder {
 
     if (op.type === 'basementWin') {
       const winGroup = new THREE.Group();
+      winGroup.userData.isWindowCollider = true;
       // Biała opaska zewnętrzna i rama okienka piwnicznego
       const frameGeo = new THREE.BoxGeometry(
         axis === 'X' ? width : 0.08,
@@ -400,8 +404,10 @@ export class FoundationBuilder {
       const leafGeo = new THREE.BoxGeometry(0.06, height - 0.04, leafW);
       const leftLeaf = new THREE.Mesh(leafGeo, this.mats.garageDoorMat);
       leftLeaf.position.set(fixedCoord, yMid, op.cMin + leafW * 0.5);
+      leftLeaf.userData.isPassableDoor = true;
       const rightLeaf = new THREE.Mesh(leafGeo, this.mats.garageDoorMat);
       rightLeaf.position.set(fixedCoord, yMid, op.cMax - leafW * 0.5);
+      rightLeaf.userData.isPassableDoor = true;
       parentGroup.add(leftLeaf, rightLeaf);
     } else if (op.type === 'singleDoor') {
       // Jednoskrzydłowe drzwi piwniczne w ościeżnicy (np. 80 × 200 cm u dołu schodów i do kotłowni)
@@ -417,10 +423,12 @@ export class FoundationBuilder {
         op.yMax - 0.025,
         axis === 'Z' ? cMid : fixedCoord
       );
+      topFrame.userData.isPassableDoor = true;
       parentGroup.add(topFrame);
 
       // Skrzydło drzwiowe lekko uchylone (35°), aby ułatwić wgląd i przejście awatara
       const leafPivot = new THREE.Group();
+      leafPivot.userData.isPassableDoor = true;
       leafPivot.position.set(
         axis === 'X' ? op.cMin + 0.03 : fixedCoord,
         yMid,
@@ -462,6 +470,7 @@ export class FoundationBuilder {
       const mat = op.type === 'usableRoomDoor' ? this.mats.windowFrameWhite : this.mats.garageDoorMat;
       for (const side of [-1, 1]) {
         const pivot = new THREE.Group();
+        pivot.userData.isPassableDoor = true;
         const zHinge = side < 0 ? op.cMin + 0.02 : op.cMax - 0.02;
         pivot.position.set(fixedCoord, yMid, zHinge);
         const leaf = new THREE.Mesh(
@@ -600,6 +609,7 @@ export class FoundationBuilder {
     tableTop.position.set(-7.30, yFloor + 0.78, -1.65);
     tableTop.castShadow = true;
     tableTop.receiveShadow = true;
+    tableTop.userData.isObstacleCollider = true;
     roomGroup.add(tableTop);
 
     for (const dx of [-0.36, 0.36]) {
@@ -671,6 +681,7 @@ export class FoundationBuilder {
       this.mats.kleinBrickPlate
     );
     brickJacket.position.y = 0.59;
+    brickJacket.userData.isObstacleCollider = true;
 
     const ironCore = new THREE.Mesh(
       new THREE.BoxGeometry(0.52, 1.12, 0.72),

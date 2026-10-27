@@ -125,6 +125,7 @@ export class RoofTrussBuilder {
         post.position.set(xPos, yEaves + postHeight / 2, zPost);
         post.castShadow = true;
         post.name = 'Stolec 14×14 cm';
+        post.userData.isObstacleCollider = true;
         roofTrussGroup.add(post);
 
         // Miecze usztywniające (45 stopni)
@@ -290,6 +291,7 @@ export class RoofTrussBuilder {
     stackBody.position.set(xCenter, yEaves + hStack / 2, zCenter);
     stackBody.castShadow = true;
     stackBody.receiveShadow = true;
+    stackBody.userData.isWallCollider = true;
     group.add(stackBody);
 
     // Obróbka blacharska wokół komina
