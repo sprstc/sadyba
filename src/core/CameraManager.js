@@ -497,13 +497,14 @@ export class CameraManager {
   }
 
   /**
-   * Kolizja cylindra postaci (promień r = 0.255 m, wys. [y + 0.42, y + 1.68]) z bryłami AABB ścian i przeszkód.
-   * Zapewnia płynne ślizganie się wzdłuż ścian oraz brak przenikania przy obracaniu kamery.
+   * Kolizja cylindra postaci (wysokość ~1.82 m, szerokość w barkach 0.60 m -> promień bazowy r = 0.295 m,
+   * adaptujący się do r = 0.255 m przy ściągnięciu ramion w wąskich przejściach) z bryłami AABB ścian i przeszkód.
    */
   resolveAvatarCollisions(pos) {
-    const r = this.avatarRadius;
+    const squeeze = this.avatar && typeof this.avatar.squeezeCurrent === 'number' ? this.avatar.squeezeCurrent : 0;
+    const r = 0.295 - squeeze * 0.04;
     const yMin = pos.y + 0.42;
-    const yMax = pos.y + 1.68;
+    const yMax = pos.y + 1.78;
 
     // Ograniczenie do granic działki
     pos.x = THREE.MathUtils.clamp(pos.x, -19.25, 19.0);
@@ -570,6 +571,92 @@ export class CameraManager {
       this.playerPos.x += stepX;
       this.playerPos.z += stepZ;
       this.resolveAvatarCollisions(this.playerPos);
+    }
+  }
+
+  /**
+   * 8-kierunkowy poziomy Raycasting wokół pasa i klatki piersiowej postaci (Y = pos.y + 1.05 m)
+   * mierzący odstęp do otaczających ścian i przeszkód:
+   * - Przestronnie (Clearance > 1.20 m): szeroki uśmiech 😄, rozluźnione barki i zielony wskaźnik komfortu,
+   * - Ciasno / Ścisk (Clearance < 0.65 m z wielu stron): ściągnięte ramiona, skulone barki, grymas 😣,
+   *   lekkie drżenie siatki i pływający ostrzegawczy znacznik z dokładną szerokością przejścia w cm.
+   */
+  evaluateSpaceComfort() {
+    if (!this.avatar || typeof this.avatar.setSpaceComfort !== 'function') return;
+
+    if (this.noclip || !this.avatarBoxes || this.avatarBoxes.length === 0) {
+      this.avatar.setSpaceComfort('spacious', 200, 0);
+      return;
+    }
+
+    const originY = this.playerPos.y + 1.05;
+    const origin = new THREE.Vector3(this.playerPos.x, originY, this.playerPos.z);
+    const maxRange = 3.0;
+    const dists = new Array(8).fill(maxRange);
+
+    for (let dirIdx = 0; dirIdx < 8; dirIdx++) {
+      const angle = this.avatarYaw + (dirIdx * Math.PI) / 4;
+      const dx = Math.sin(angle);
+      const dz = Math.cos(angle);
+
+      this._tempRay.origin.copy(origin);
+      this._tempRay.direction.set(dx, 0, dz);
+
+      let minHit = maxRange;
+      for (let i = 0; i < this.avatarBoxes.length; i++) {
+        const box = this.avatarBoxes[i];
+        if (box.max.y < this.playerPos.y + 0.55 || box.min.y > this.playerPos.y + 1.72) continue;
+
+        if (box.containsPoint(origin)) {
+          minHit = 0.25;
+          break;
+        }
+
+        const hitPt = this._tempRay.intersectBox(box, this._tempHit);
+        if (hitPt) {
+          const d = origin.distanceTo(hitPt);
+          if (d < minHit) {
+            minHit = d;
+          }
+        }
+      }
+      dists[dirIdx] = minHit;
+    }
+
+    // Analiza 8 promieni: liczba ciasnych kierunków (< 0.65 m) oraz 4 średnice przejścia (przeciwległe pary)
+    let tightCount = 0;
+    let spaciousCount = 0;
+    let minRayDist = maxRange;
+
+    for (let i = 0; i < 8; i++) {
+      const d = dists[i];
+      if (d < minRayDist) minRayDist = d;
+      if (d < 0.65) tightCount++;
+      if (d > 1.20) spaciousCount++;
+    }
+
+    const pairWidths = [
+      dists[0] + dists[4], // Przód - Tył
+      dists[1] + dists[5], // Skos 1
+      dists[2] + dists[6], // Lewo - Prawo (szerokość korytarza względem barków)
+      dists[3] + dists[7], // Skos 2
+    ];
+    const minPairWidth = Math.min(...pairWidths);
+
+    if (tightCount >= 2 || minPairWidth < 1.18) {
+      // Tryb „Squeezed” (Ciasna przestrzeń / wąskie przejście < 65 cm z wielu stron)
+      const effectiveWidthMeters = minPairWidth < 1.35 ? minPairWidth : minRayDist * 2.0;
+      const clearanceCm = Math.max(45, Math.round(effectiveWidthMeters * 100));
+      const squeezeIntensity = THREE.MathUtils.clamp((0.65 - minRayDist) / 0.32, 0.45, 1.0);
+      this.avatar.setSpaceComfort('cramped', clearanceCm, squeezeIntensity);
+    } else if (minRayDist > 1.20 || (tightCount === 0 && spaciousCount >= 6 && minRayDist > 0.85)) {
+      // Tryb „Spacious” (Przestronna / komfortowa przestrzeń > 1.20 m)
+      const clearanceCm = Math.round(Math.min(300, minRayDist * 100));
+      this.avatar.setSpaceComfort('spacious', clearanceCm, 0);
+    } else {
+      // Tryb pośredni („Normal”)
+      const clearanceCm = Math.round(minPairWidth * 100);
+      this.avatar.setSpaceComfort('normal', clearanceCm, 0);
     }
   }
 
@@ -860,9 +947,9 @@ export class CameraManager {
         } else {
           this.playerVelY -= 12.5 * dt;
           this.playerPos.y += this.playerVelY * dt;
-          // Ograniczenie skoku od stropu nad głową postaci (wys. postaci 1.80 m)
-          if (this.playerPos.y + 1.80 > ceilingY) {
-            this.playerPos.y = Math.max(targetGroundY, ceilingY - 1.80);
+          // Ograniczenie skoku od stropu nad głową postaci (wys. postaci z kaskiem 1.82 m)
+          if (this.playerPos.y + 1.82 > ceilingY) {
+            this.playerPos.y = Math.max(targetGroundY, ceilingY - 1.82);
             this.playerVelY = Math.min(0, this.playerVelY);
           }
           if (this.playerPos.y <= targetGroundY) {
@@ -874,9 +961,15 @@ export class CameraManager {
       }
     }
 
+    const isSprinting = Boolean(
+      !this.autopilot && (this.keys['ShiftLeft'] || this.keys['ShiftRight']) && moveSpeed > 0.02
+    );
+
+    this.evaluateSpaceComfort();
+
     this.avatar.group.position.copy(this.playerPos);
     this.avatar.group.rotation.y = this.avatarYaw;
-    this.avatar.update(dt, moveSpeed, this.isGrounded);
+    this.avatar.update(dt, moveSpeed, this.isGrounded, isSprinting);
 
     this.updateTppCamera(dt);
     this.notifyHud();
