@@ -151,8 +151,8 @@ export class FloorKleinBuilder {
     addCeramicBay(-1.10, -0.02, zNorthWallInner, zWestBayEnd);
     addCeramicBay(-0.02, 0.90, zNorthWallInner, zStairTrimmer);
     addCeramicBay(0.90, 2.05, zNorthWallInner, zStairTrimmer);
-    // W stropie nad piwnicą przejście korytarza do drzwi piwnicznych sięga Z = -1.35 m, a na wyższych stropach podest kończy się na Z = -1.92 m
-    addCeramicBay(0.02, 1.05, zStairTrimmer, isBasementSlab ? -1.35 : -1.92);
+    // W stropie nad piwnicą przejście korytarza do drzwi piwnicznych sięga Z = -1.35 m, a na wyższych stropach podest kończy się na Z = -2.01 m (wyjście schodów)
+    addCeramicBay(0.02, 1.05, zStairTrimmer, isBasementSlab ? -1.35 : -2.01);
     // Podest WC przy klatce (X od +1.05 do +2.05, Z od -2.85 do -0.25)
     addCeramicBay(1.05, 2.05, zStairTrimmer, zSouthWallInner);
 

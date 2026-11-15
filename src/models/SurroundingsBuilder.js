@@ -88,6 +88,17 @@ export class SurroundingsBuilder {
     frontLawn.receiveShadow = true;
     group.add(frontLawn);
 
+    // Uzupełnienie trawnika pod taras z 1955 r. (widoczne gdy weranda 1966 wyłączona)
+    const veranda1955Patch = new THREE.Mesh(
+      new THREE.BoxGeometry(2.70, 0.16, 6.08),
+      m.get('grass')
+    );
+    veranda1955Patch.name = isSouthTwin ? 'Grass_Infill_1955_A' : 'Grass_Infill_1955_B';
+    veranda1955Patch.position.set(-6.85, -0.08, signZ * -3.04);
+    veranda1955Patch.receiveShadow = true;
+    veranda1955Patch.visible = false;
+    group.add(veranda1955Patch);
+
     // Wąski pas przedogródka przy narożniku NE obok zjazdu (X od +5.50 do +10.50, Z od -5.60 do -6.08)
     const northFrontStrip = new THREE.Mesh(
       new THREE.BoxGeometry(5.00, 0.16, 0.48),
@@ -162,7 +173,7 @@ export class SurroundingsBuilder {
     }
 
     // 5. Ogrodzenie frontowe wzdłuż ulicy frontowej (X = +10.50 m) oraz ogrodzenia boczne
-    this.buildFences(group, signZ);
+    this.buildFences(group, signZ, isSouthTwin);
 
     // 6. Drzewa i krzewy w ogrodzie (Osiedle ogrodowe słynie ze starego drzewostanu)
     this.buildGardenVegetation(group, signZ);
@@ -173,7 +184,7 @@ export class SurroundingsBuilder {
   /**
    * Ogrodzenie frontowe (cokół betonowy + przęsła z siatki stalowej, brama wjazdowa i furtka)
    */
-  buildFences(group, signZ) {
+  buildFences(group, signZ, isSouthTwin = signZ < 0) {
     const m = this.materials;
     const xFence = 10.50;
 
@@ -194,6 +205,7 @@ export class SurroundingsBuilder {
       );
       plinth.position.set(xFence, 0.175, signZ * midZ);
       plinth.castShadow = true;
+      plinth.userData.isObstacleCollider = true;
       group.add(plinth);
 
       // Przęsło ogrodzeniowe
@@ -215,26 +227,65 @@ export class SurroundingsBuilder {
       );
       post.position.set(xFence, 0.80, signZ * zp);
       post.castShadow = true;
+      post.userData.isObstacleCollider = true;
       group.add(post);
     }
 
+    const segTag = isSouthTwin ? 'A' : 'B';
+    const markGatePivot = (pivot, doorDef) => {
+      pivot.userData.doorDef = doorDef;
+      pivot.traverse((c) => {
+        if (c !== pivot && c.isMesh) {
+          c.userData.isInteractiveDoor = true;
+        }
+      });
+    };
+
     // Dwuskrzydłowa brama wjazdowa nad zjazdem do Garażu I (Z od -2.70 do -5.60, oś Z = -4.15 m)
-    for (const gateZ of [-3.42, -4.88]) {
-      const gateFrame = new THREE.Mesh(
+    const gatePairId = `front-drive-gate-${segTag}`;
+    for (const [suffix, zBase, dirZLocal] of [
+      ['S', -2.72, -signZ],
+      ['N', -5.58, signZ],
+    ]) {
+      const gatePivot = new THREE.Group();
+      gatePivot.position.set(xFence, 0.72, signZ * zBase);
+      const gateLeaf = new THREE.Mesh(
         new THREE.BoxGeometry(0.05, 1.35, 1.38),
         m.get('steelRailing')
       );
-      gateFrame.position.set(xFence, 0.72, signZ * gateZ);
-      group.add(gateFrame);
+      gateLeaf.position.z = dirZLocal * 0.69;
+      gatePivot.add(gateLeaf);
+      markGatePivot(gatePivot, {
+        id: `${gatePairId}-${suffix}`,
+        pairId: gatePairId,
+        label: 'Brama wjazdowa na posesję',
+        closedAngle: 0,
+        openAngle: -dirZLocal * 1.50,
+        initialOpen: false,
+        materialType: 'metal',
+      });
+      group.add(gatePivot);
     }
 
     // Furtka wejściowa (Z od -6.70 do -8.00)
+    const wicketPivot = new THREE.Group();
+    wicketPivot.position.set(xFence, 0.75, signZ * -6.74);
     const wicket = new THREE.Mesh(
       new THREE.BoxGeometry(0.05, 1.40, 1.22),
       m.get('steelRailing')
     );
-    wicket.position.set(xFence, 0.75, signZ * -7.35);
-    group.add(wicket);
+    const wicketDirZ = -signZ;
+    wicket.position.z = wicketDirZ * 0.61;
+    wicketPivot.add(wicket);
+    markGatePivot(wicketPivot, {
+      id: `front-wicket-${segTag}`,
+      label: 'Furtka wejściowa',
+      closedAngle: 0,
+      openAngle: -wicketDirZ * 1.48,
+      initialOpen: false,
+      materialType: 'metal',
+    });
+    group.add(wicketPivot);
 
     // Ogrodzenie boczne i tylne ogrodu
     const northFence = new THREE.Mesh(
@@ -303,6 +354,7 @@ export class SurroundingsBuilder {
     );
     pole.position.y = 2.3;
     pole.castShadow = true;
+    pole.userData.isObstacleCollider = true;
     lampGroup.add(pole);
 
     const cap = new THREE.Mesh(
@@ -347,6 +399,7 @@ export class SurroundingsBuilder {
     mainLeg.position.set(xPole, hPole / 2, zPole);
     mainLeg.castShadow = true;
     mainLeg.name = 'Słup energetyczny ŻN (do demontażu)';
+    mainLeg.userData.isObstacleCollider = true;
     group.add(mainLeg);
 
     // Szczudło betonowe przyziemne
@@ -355,6 +408,7 @@ export class SurroundingsBuilder {
       m.get('concrete')
     );
     baseStump.position.set(xPole, 0.90, zPole + 0.12);
+    baseStump.userData.isObstacleCollider = true;
     group.add(baseStump);
 
     // Żółta opaska ostrzegawcza

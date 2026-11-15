@@ -23,6 +23,7 @@ export class BuildingBuilder {
    * @param {Object} options - { includeVeranda1966: boolean }
    */
   build(options = { includeVeranda1966: true }) {
+    this._buildOptions = options;
     const groundFloorGroup = new THREE.Group();
     groundFloorGroup.name = 'Layer_GroundFloor';
     groundFloorGroup.userData.explodeLevel = 0.5;
@@ -497,7 +498,7 @@ export class BuildingBuilder {
     //    - przejście zachodnie (szer. 73/84 cm: X od -1.00 do +0.02 m, Z od -3.05 do -2.21 m) przed pierwszym stopniem
     //      schodów strychowych (183 cm od ściany płd.), prowadzące do drzwi Sypialni Głównej (X = -1.00 m)!
     addFloorTile(1.02, 1.95, -2.95, -1.35, this.mats.oakParquet);
-    addFloorTile(0.02, 1.02, -3.05, -1.92, this.mats.oakParquet);
+    addFloorTile(0.02, 1.02, -3.05, -2.01, this.mats.oakParquet);
     addFloorTile(-1.00, 0.02, -3.05, -2.21, this.mats.oakParquet);
 
     // 4. Toaleta / WC I piętra (0,80 m², 107×83 cm w narożniku przy kominie: X od +1.02 do +2.09 m, Z od -1.35 do -0.38 m)
@@ -755,10 +756,10 @@ export class BuildingBuilder {
       walkables.push(mesh);
     };
 
-    // Część wschodnia, północna i zachodnia wokół klatki schodowej (z podejściem wyjściowym Z = -1.85 po stronie wschodniej)
+    // Część wschodnia, północna i zachodnia wokół klatki schodowej (wyjście ze schodów na Z = -2.01 m)
     addPineFloor(1.05, xFront, zNorth, zSouth);
     addPineFloor(xRear, 1.05, zNorth, -2.21);
-    addPineFloor(0.02, 1.05, -2.21, -1.80);
+    addPineFloor(0.02, 1.05, -2.21, -2.01);
     addPineFloor(xRear, -0.95, -2.21, zSouth);
 
     // Drewniana balustrada ochronna wokół otworu schodowego na poddaszu (chroni przed wpadnięciem do klatki schodowej)
@@ -788,10 +789,10 @@ export class BuildingBuilder {
       col.userData.isObstacleCollider = true;
       group.add(col);
     };
-    // Zachodnia, północno-zachodnia i wschodnia krawędź otworu schodowego (wyjście ze schodów na X in [0.02, 0.98], Z = -1.80 otwarte!)
+    // Zachodnia, północno-zachodnia i wschodnia krawędź otworu schodowego (wyjście ze schodów na X in [0.02, 0.98], Z = -2.01 otwarte!)
     addAtticStairRail(-0.95, -2.21, -0.95, -0.38);
     addAtticStairRail(-0.95, -2.21, 0.02, -2.21);
-    addAtticStairRail(1.02, -1.80, 1.02, -0.38);
+    addAtticStairRail(1.02, -2.01, 1.02, -0.38);
 
     // Ścianka kolankowa obwodowa (wys. 0.45 m pod murłatę)
     const kneeH = 0.32;
@@ -809,24 +810,14 @@ export class BuildingBuilder {
     addKneeWall(xFront, zNorth, xFront, 0);
     addKneeWall(xRear, zNorth, xRear, 0);
 
-    // Niewidoczna strefa kolizyjna niskiego okapu na poddaszu (aby awatar nie wchodził głową w skosy połaci dachowej przy murłacie)
-    const addEavesCollider = (x1, z1, x2, z2) => {
-      const lenX = Math.abs(x2 - x1);
-      const lenZ = Math.abs(z2 - z1);
-      const isX = lenX >= lenZ;
-      const box = new THREE.Mesh(
-        new THREE.BoxGeometry(isX ? lenX : 0.55, 1.85, isX ? 0.55 : lenZ),
-        new THREE.MeshBasicMaterial({ visible: false })
-      );
-      box.position.set((x1 + x2) * 0.5, y0 + 0.925, (z1 + z2) * 0.5);
-      box.userData.isObstacleCollider = true;
-      group.add(box);
-    };
-    addEavesCollider(xRear, zNorth + 0.25, xFront, zNorth + 0.25);
-    addEavesCollider(xFront - 0.25, zNorth, xFront - 0.25, 0);
-    addEavesCollider(xRear + 0.25, zNorth, xRear + 0.25, 0);
-    // Ściana południowa kominowa na poddaszu (Z = -0.19 m)
-    addEavesCollider(xRear, -0.15, xFront, -0.15);
+    // Ściana południowa kominowa na poddaszu (Z = -0.15 m — ściana oddzielenia bliźniaczego)
+    const southPartyAtticWall = new THREE.Mesh(
+      new THREE.BoxGeometry(Math.abs(xFront - xRear), 2.75, 0.32),
+      new THREE.MeshBasicMaterial({ visible: false })
+    );
+    southPartyAtticWall.position.set((xRear + xFront) * 0.5, y0 + 1.375, -0.15);
+    southPartyAtticWall.userData.isWallCollider = true;
+    group.add(southPartyAtticWall);
   }
 
   // ==========================================================================
@@ -1074,8 +1065,8 @@ export class BuildingBuilder {
     // ------------------------------------------------------------------------
     // 4. BIEG GÓRNY WYJŚCIOWY (POZOSTAŁE STOPNIE W KIERUNKU PÓŁNOCNYM -Z NA PÓŁPIĘTRO)
     // ------------------------------------------------------------------------
-    const nUpper = totalSteps - nLower - nWinder; // 3 stopnie dla parteru (18-7-8=3), 1 dla poddasza
-    const upperRun = 0.22;
+    const nUpper = totalSteps - nLower - nWinder; // 3 stopnie dla parteru (18-7-8=3), 4 dla poddasza (16-4-8=4)
+    const upperRun = isMainFlight ? 0.22 : 0.165; // oba biegi wychodzą dokładnie na Z = -2.01 m
     const xUpperCenter = (xPivot + xEast) * 0.5; // +0.50 m
 
     for (let u = 0; u < nUpper; u++) {
@@ -1268,8 +1259,10 @@ export class BuildingBuilder {
     const postGeo = new THREE.CylinderGeometry(0.035, 0.035, 2.35, 10);
     const postL = new THREE.Mesh(postGeo, this.mats.railingSteel);
     postL.position.set(xCenter - 0.72, yGroundFloor + 1.175, zOuter + 0.08);
+    postL.userData.isObstacleCollider = true;
     const postR = new THREE.Mesh(postGeo, this.mats.railingSteel);
     postR.position.set(xCenter + 0.72, yGroundFloor + 1.175, zOuter + 0.08);
+    postR.userData.isObstacleCollider = true;
 
     const canopyRoof = new THREE.Mesh(
       new THREE.ConeGeometry(1.32, 0.78, 4),
@@ -1540,9 +1533,16 @@ export class BuildingBuilder {
 
     if (op.type === 'window2' || op.type === 'window3') {
       joinery.userData.isWindowCollider = true;
-    } else {
-      joinery.userData.isPassableDoor = true;
     }
+
+    const markDoorPivot = (pivot, doorDef) => {
+      pivot.userData.doorDef = doorDef;
+      pivot.traverse((c) => {
+        if (c !== pivot && c.isMesh) {
+          c.userData.isInteractiveDoor = true;
+        }
+      });
+    };
 
     if (op.type === 'window2' || op.type === 'window3') {
       const panes = op.type === 'window3' ? 3 : 2;
@@ -1576,6 +1576,7 @@ export class BuildingBuilder {
         new THREE.BoxGeometry(w - frameT * 2, h - frameT * 2, 0.015),
         this.mats.glassClear
       );
+      glass.userData.isGlassPane = true;
       joinery.add(glass);
 
       // Parapet wewnętrzny i zewnętrzny z lastriko
@@ -1586,20 +1587,55 @@ export class BuildingBuilder {
       sill.position.y = -h * 0.5 - 0.01;
       joinery.add(sill);
     } else if (op.type === 'balconyPortfenetr' || op.type === 'glazedDoubleDoor') {
-      // Dwuskrzydłowe drzwi balkonowe / werandowe przeszklone
-      const frameT = 0.06;
-      const leftLeaf = new THREE.Mesh(new THREE.BoxGeometry(0.05, h, 0.08), this.mats.windowFrameWhite);
-      leftLeaf.position.x = -w * 0.5 + 0.025;
-      const rightLeaf = new THREE.Mesh(new THREE.BoxGeometry(0.05, h, 0.08), this.mats.windowFrameWhite);
-      rightLeaf.position.x = w * 0.5 - 0.025;
-      const centerPost = new THREE.Mesh(new THREE.BoxGeometry(0.05, h, 0.08), this.mats.windowFrameWhite);
-      const botKick = new THREE.Mesh(new THREE.BoxGeometry(w, 0.38, 0.06), this.mats.windowFrameWhite);
-      botKick.position.y = -h * 0.5 + 0.19;
-      const glass = new THREE.Mesh(new THREE.BoxGeometry(w - 0.1, h - 0.44, 0.015), this.mats.glassClear);
-      glass.position.y = 0.18;
-      joinery.add(leftLeaf, rightLeaf, centerPost, botKick, glass);
+      // Dwuskrzydłowe drzwi balkonowe / werandowe przeszklone — pełna interaktywna stolarka zawiasowa
+      const frameT = 0.045;
+      const jambL = new THREE.Mesh(new THREE.BoxGeometry(frameT, h, 0.08), this.mats.windowFrameWhite);
+      jambL.position.x = -w * 0.5 + frameT * 0.5;
+      const jambR = new THREE.Mesh(new THREE.BoxGeometry(frameT, h, 0.08), this.mats.windowFrameWhite);
+      jambR.position.x = w * 0.5 - frameT * 0.5;
+      const head = new THREE.Mesh(new THREE.BoxGeometry(w, frameT, 0.08), this.mats.windowFrameWhite);
+      head.position.y = h * 0.5 - frameT * 0.5;
+      joinery.add(jambL, jambR, head);
+
+      const isVerandaDouble = op.type === 'glazedDoubleDoor';
+      const pairId = isVerandaDouble ? 'salon-veranda-double' : 'first-terrace-double';
+      const label = isVerandaDouble ? 'Drzwi Salonu i Werandy' : 'Drzwi tarasowe I piętra';
+      const initOpen = isVerandaDouble ? Boolean(this._buildOptions?.includeVeranda1966) : false;
+
+      const leafW = (w - frameT * 2) * 0.5 - 0.01;
+      for (const sign of [-1, 1]) {
+        const pivot = new THREE.Group();
+        pivot.position.set(-sign * (w * 0.5 - frameT), 0, 0);
+
+        const railTop = new THREE.Mesh(new THREE.BoxGeometry(leafW, 0.06, 0.05), this.mats.windowFrameWhite);
+        railTop.position.set(sign * leafW * 0.5, (h - 0.06) * 0.5 - 0.03, 0);
+        const railBot = new THREE.Mesh(new THREE.BoxGeometry(leafW, 0.36, 0.05), this.mats.windowFrameWhite);
+        railBot.position.set(sign * leafW * 0.5, -(h - 0.06) * 0.5 + 0.18, 0);
+        const stileOut = new THREE.Mesh(new THREE.BoxGeometry(0.05, h - 0.06, 0.05), this.mats.windowFrameWhite);
+        stileOut.position.x = sign * 0.025;
+        const stileIn = new THREE.Mesh(new THREE.BoxGeometry(0.05, h - 0.06, 0.05), this.mats.windowFrameWhite);
+        stileIn.position.x = sign * (leafW - 0.025);
+        const glassPane = new THREE.Mesh(
+          new THREE.BoxGeometry(leafW - 0.09, h - 0.48, 0.016),
+          this.mats.glassClear
+        );
+        glassPane.position.set(sign * leafW * 0.5, 0.14, 0);
+        glassPane.userData.isGlassPane = true;
+
+        pivot.add(railTop, railBot, stileOut, stileIn, glassPane);
+        markDoorPivot(pivot, {
+          id: `${pairId}-${sign > 0 ? 'N' : 'S'}`,
+          pairId,
+          label,
+          closedAngle: 0,
+          openAngle: sign * 1.42,
+          initialOpen: initOpen,
+          materialType: 'glass',
+        });
+        joinery.add(pivot);
+      }
     } else if (op.type === 'salonPortalDoor') {
-      // Reprezentacyjne dwuskrzydłowe drzwi z korytarza do salonu (otwarte do wewnątrz, jak na zdjęciu tempImageAedmXv!)
+      // Reprezentacyjne dwuskrzydłowe drzwi z korytarza do salonu (zawiasowe)
       const frameTop = new THREE.Mesh(new THREE.BoxGeometry(w, 0.05, thickness + 0.04), this.mats.oakStairs);
       frameTop.position.y = h * 0.5 - 0.025;
       joinery.add(frameTop);
@@ -1611,60 +1647,86 @@ export class BuildingBuilder {
         woodFrame.position.x = sign * leafW * 0.5;
         const ornGlass = new THREE.Mesh(new THREE.BoxGeometry(leafW * 0.65, h * 0.62, 0.05), this.mats.glassOrnamental);
         ornGlass.position.set(sign * leafW * 0.5, 0.1, 0);
+        ornGlass.userData.isGlassPane = true;
         leafGroup.add(woodFrame, ornGlass);
         leafGroup.position.x = -sign * (w * 0.5 - 0.04);
-        leafGroup.rotation.y = sign * 1.18; // uchylone do salonu
+        markDoorPivot(leafGroup, {
+          id: `salon-portal-${sign > 0 ? 'N' : 'S'}`,
+          pairId: 'salon-portal',
+          label: 'Drzwi dwuskrzydłowe Salonu',
+          closedAngle: 0,
+          openAngle: sign * 1.38,
+          initialOpen: true,
+          materialType: 'glass',
+        });
         return leafGroup;
       };
       joinery.add(createOpenLeaf(1), createOpenLeaf(-1));
     } else if (op.type === 'verandaGardenDoor') {
-      // Białe, przeszklone na pełnej wysokości drzwi ogrodowe werandy (jak na zdjęciu z ogrodu):
-      // - biała rama ościeżnicy i skrzydła,
-      // - poziomy szpros (poprzeczka) na wysokości parapetu sąsiedniego okna (0.80 m od posadzki),
-      // - przeszklenie zarówno w dolnej, jak i w górnej kwaterze.
-      const frameT = 0.06;
+      // Białe, przeszklone na pełnej wysokości drzwi ogrodowe werandy (otwierane do wewnątrz werandy)
+      const frameT = 0.05;
       const depth = 0.09;
-      const topBar = new THREE.Mesh(new THREE.BoxGeometry(w, frameT, depth), this.mats.windowFrameWhite);
-      topBar.position.y = h * 0.5 - frameT * 0.5;
-      const botBar = new THREE.Mesh(new THREE.BoxGeometry(w, frameT * 1.3, depth), this.mats.windowFrameWhite);
-      botBar.position.y = -h * 0.5 + frameT * 0.65;
-      const leftBar = new THREE.Mesh(new THREE.BoxGeometry(frameT, h, depth), this.mats.windowFrameWhite);
-      leftBar.position.x = -w * 0.5 + frameT * 0.5;
-      const rightBar = new THREE.Mesh(new THREE.BoxGeometry(frameT, h, depth), this.mats.windowFrameWhite);
-      rightBar.position.x = w * 0.5 - frameT * 0.5;
+      const topFrame = new THREE.Mesh(new THREE.BoxGeometry(w, frameT, depth), this.mats.windowFrameWhite);
+      topFrame.position.y = h * 0.5 - frameT * 0.5;
+      const leftFrame = new THREE.Mesh(new THREE.BoxGeometry(frameT, h, depth), this.mats.windowFrameWhite);
+      leftFrame.position.x = -w * 0.5 + frameT * 0.5;
+      const rightFrame = new THREE.Mesh(new THREE.BoxGeometry(frameT, h, depth), this.mats.windowFrameWhite);
+      rightFrame.position.x = w * 0.5 - frameT * 0.5;
+      joinery.add(topFrame, leftFrame, rightFrame);
 
-      // Pozioma poprzeczka na wysokości parapetu (0.80 m nad posadzką)
-      const midRailY = -h * 0.5 + 0.80;
-      const midRail = new THREE.Mesh(new THREE.BoxGeometry(w - frameT * 2, 0.055, depth), this.mats.windowFrameWhite);
-      midRail.position.y = midRailY;
+      const leafW = w - frameT * 2;
+      const leafH = h - frameT - 0.02;
+      const doorPivot = new THREE.Group();
+      doorPivot.position.set(w * 0.5 - frameT, -frameT * 0.5, 0);
 
-      // Szyba górna i dolna
+      const stileL = new THREE.Mesh(new THREE.BoxGeometry(0.06, leafH, 0.05), this.mats.windowFrameWhite);
+      stileL.position.x = -0.03;
+      const stileR = new THREE.Mesh(new THREE.BoxGeometry(0.06, leafH, 0.05), this.mats.windowFrameWhite);
+      stileR.position.x = -leafW + 0.03;
+      const railTop = new THREE.Mesh(new THREE.BoxGeometry(leafW, 0.06, 0.05), this.mats.windowFrameWhite);
+      railTop.position.set(-leafW * 0.5, leafH * 0.5 - 0.03, 0);
+      const railBot = new THREE.Mesh(new THREE.BoxGeometry(leafW, 0.08, 0.05), this.mats.windowFrameWhite);
+      railBot.position.set(-leafW * 0.5, -leafH * 0.5 + 0.04, 0);
+      const midRail = new THREE.Mesh(new THREE.BoxGeometry(leafW - 0.08, 0.055, 0.05), this.mats.windowFrameWhite);
+      midRail.position.set(-leafW * 0.5, -leafH * 0.5 + 0.80, 0);
       const glassPane = new THREE.Mesh(
-        new THREE.BoxGeometry(w - frameT * 2, h - frameT * 2.3, 0.016),
+        new THREE.BoxGeometry(leafW - 0.12, leafH - 0.14, 0.016),
         this.mats.glassClear
       );
-      joinery.add(topBar, botBar, leftBar, rightBar, midRail, glassPane);
+      glassPane.position.set(-leafW * 0.5, 0, 0);
+      glassPane.userData.isGlassPane = true;
+
+      doorPivot.add(stileL, stileR, railTop, railBot, midRail, glassPane);
+      markDoorPivot(doorPivot, {
+        id: 'veranda-garden',
+        label: 'Drzwi ogrodowe werandy',
+        closedAngle: 0,
+        openAngle: -1.45,
+        initialOpen: false,
+        materialType: 'glass',
+      });
+      joinery.add(doorPivot);
     } else if (op.type === 'vestibuleInnerDoor') {
-      // Centralne półtoraskrzydłowe przeszklone drzwi wewnętrzne wiatrołapu (120 × 200 cm, jak na zdjęciach 2 i 4!):
-      // - skrzydło główne (szer. 84 cm) z dużą taflą szkła ornamentowego mrożonego,
-      // - dostawka boczna (szer. 32 cm) z wąskim pionowym paskiem szkła ornamentowego.
+      // Centralne półtoraskrzydłowe przeszklone drzwi wewnętrzne wiatrołapu (120 × 200 cm)
       const head = new THREE.Mesh(new THREE.BoxGeometry(w, 0.05, thickness + 0.04), this.mats.oakStairs);
       head.position.y = h * 0.5 - 0.025;
-      const jambL = new THREE.Mesh(new THREE.BoxGeometry(0.05, h, thickness + 0.04), this.mats.oakStairs);
-      jambL.position.x = -w * 0.5 + 0.025;
-      const jambR = new THREE.Mesh(new THREE.BoxGeometry(0.05, h, thickness + 0.04), this.mats.oakStairs);
-      jambR.position.x = w * 0.5 - 0.025;
+      const jambL = new THREE.Mesh(new THREE.BoxGeometry(0.04, h, thickness + 0.04), this.mats.oakStairs);
+      jambL.position.x = -w * 0.5 + 0.02;
+      const jambR = new THREE.Mesh(new THREE.BoxGeometry(0.04, h, thickness + 0.04), this.mats.oakStairs);
+      jambR.position.x = w * 0.5 - 0.02;
       joinery.add(head, jambL, jambR);
 
-      // Dostawka wschodnia (lewa patrząc z korytarza na północ: X od +0.24 do +0.56)
+      // Dostawka wschodnia (stała, stanowi część ściany przy otworze)
       const sideW = 0.32;
       const sideLeaf = new THREE.Mesh(new THREE.BoxGeometry(sideW, h - 0.06, 0.045), this.mats.oakStairs);
       sideLeaf.position.x = w * 0.5 - 0.04 - sideW * 0.5;
+      sideLeaf.userData.isWallCollider = true;
       const sideGlass = new THREE.Mesh(new THREE.BoxGeometry(0.11, h * 0.58, 0.05), this.mats.glassOrnamental);
       sideGlass.position.set(sideLeaf.position.x, 0.12, 0);
+      sideGlass.userData.isGlassPane = true;
       joinery.add(sideLeaf, sideGlass);
 
-      // Skrzydło główne (lekko uchylone do korytarza, z dużą szybą ornamentową jak na zdjęciu nr 2!)
+      // Skrzydło główne (zawiasowe, otwierane szeroko do korytarza +Z)
       const mainW = w - sideW - 0.08;
       const mainPivot = new THREE.Group();
       mainPivot.position.set(-w * 0.5 + 0.04, 0, 0);
@@ -1672,22 +1734,54 @@ export class BuildingBuilder {
       mainLeaf.position.x = mainW * 0.5;
       const mainGlass = new THREE.Mesh(new THREE.BoxGeometry(mainW * 0.68, h * 0.60, 0.05), this.mats.glassOrnamental);
       mainGlass.position.set(mainW * 0.5, 0.12, 0);
+      mainGlass.userData.isGlassPane = true;
       mainPivot.add(mainLeaf, mainGlass);
-      mainPivot.rotation.y = 0.28; // lekko uchylone do korytarza (jak na zdjęciu nr 2!)
+      markDoorPivot(mainPivot, {
+        id: 'vestibule-inner',
+        label: 'Drzwi wiatrołapu',
+        closedAngle: 0,
+        openAngle: -1.45,
+        initialOpen: true,
+        materialType: 'glass',
+      });
       joinery.add(mainPivot);
     } else if (op.type === 'entryDoor' || op.type === 'gardenDoor') {
-      const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.07), this.mats.doorWood);
-      const upperGlass = new THREE.Mesh(new THREE.BoxGeometry(w * 0.62, h * 0.42, 0.08), this.mats.glassClear);
-      upperGlass.position.y = h * 0.16;
-      joinery.add(doorFrame, upperGlass);
+      const jambT = 0.045;
+      const jambL = new THREE.Mesh(new THREE.BoxGeometry(jambT, h, thickness + 0.03), this.mats.doorWood);
+      jambL.position.x = -w * 0.5 + jambT * 0.5;
+      const jambR = new THREE.Mesh(new THREE.BoxGeometry(jambT, h, thickness + 0.03), this.mats.doorWood);
+      jambR.position.x = w * 0.5 - jambT * 0.5;
+      const head = new THREE.Mesh(new THREE.BoxGeometry(w, jambT, thickness + 0.03), this.mats.doorWood);
+      head.position.y = h * 0.5 - jambT * 0.5;
+      joinery.add(jambL, jambR, head);
+
+      const leafW = w - jambT * 2;
+      const entryPivot = new THREE.Group();
+      entryPivot.position.set(-w * 0.5 + jambT, -jambT * 0.5, 0);
+      const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(leafW, h - jambT, 0.055), this.mats.doorWood);
+      doorFrame.position.x = leafW * 0.5;
+      const upperGlass = new THREE.Mesh(new THREE.BoxGeometry(leafW * 0.62, h * 0.40, 0.06), this.mats.glassClear);
+      upperGlass.position.set(leafW * 0.5, h * 0.16, 0);
+      upperGlass.userData.isGlassPane = true;
+      entryPivot.add(doorFrame, upperGlass);
+      markDoorPivot(entryPivot, {
+        id: op.type === 'entryDoor' ? 'entry-main' : 'garden-door',
+        label: op.type === 'entryDoor' ? 'Drzwi wejściowe' : 'Drzwi ogrodowe',
+        closedAngle: 0,
+        openAngle: 1.48,
+        initialOpen: false,
+        materialType: 'wood',
+      });
+      joinery.add(entryPivot);
     } else if (op.type === 'interiorDoor') {
-      // Ościeżnica drewniana (otwarta dla swobodnego spaceru awatara TPP!)
-      const jambL = new THREE.Mesh(new THREE.BoxGeometry(0.05, h, thickness + 0.03), this.mats.doorWood);
-      jambL.position.x = -w * 0.5 + 0.025;
-      const jambR = new THREE.Mesh(new THREE.BoxGeometry(0.05, h, thickness + 0.03), this.mats.doorWood);
-      jambR.position.x = w * 0.5 - 0.025;
-      const head = new THREE.Mesh(new THREE.BoxGeometry(w, 0.05, thickness + 0.03), this.mats.doorWood);
-      head.position.y = h * 0.5 - 0.025;
+      // Cienka opaska ościeżnicy drewnianej (3.2 cm — zachowuje pełne światło przejść 60–80 cm)
+      const jambT = 0.032;
+      const jambL = new THREE.Mesh(new THREE.BoxGeometry(jambT, h, thickness + 0.025), this.mats.doorWood);
+      jambL.position.x = -w * 0.5 + jambT * 0.5;
+      const jambR = new THREE.Mesh(new THREE.BoxGeometry(jambT, h, thickness + 0.025), this.mats.doorWood);
+      jambR.position.x = w * 0.5 - jambT * 0.5;
+      const head = new THREE.Mesh(new THREE.BoxGeometry(w, 0.04, thickness + 0.025), this.mats.doorWood);
+      head.position.y = h * 0.5 - 0.02;
       joinery.add(jambL, jambR, head);
     }
 
@@ -1765,31 +1859,59 @@ export class BuildingBuilder {
       this.mats.wainscotingWood
     );
     hallRadiator.position.set(0.92, y0 + 0.42, -2.95);
+    hallRadiator.userData.isObstacleCollider = true;
     group.add(hallRadiator);
 
+    const markDoorPivot = (pivot, doorDef) => {
+      pivot.userData.doorDef = doorDef;
+      pivot.traverse((c) => {
+        if (c !== pivot && c.isMesh) {
+          c.userData.isInteractiveDoor = true;
+        }
+      });
+    };
+
     // e) Skrzydła drzwiowe wokół wnęki "L" korytarza (zgodnie z rzutem 1966 r. i zdjęciem z wnętrza):
-    // 1. Zamknięte skrzydło drzwi do piwnicy pod schodami (Z = -1.35 m, X = +0.52 m)
+    // 1. Zamknięte skrzydło drzwi do piwnicy pod schodami (Z = -1.35 m, X od +0.15 do +0.89 m)
+    const basementDoorPivot = new THREE.Group();
+    basementDoorPivot.position.set(0.15, y0 + 0.99, -1.35);
     const basementDoorLeaf = new THREE.Mesh(
-      new THREE.BoxGeometry(0.76, 1.98, 0.04),
+      new THREE.BoxGeometry(0.74, 1.98, 0.04),
       this.mats.doorWood
     );
-    basementDoorLeaf.position.set(0.52, y0 + 0.99, -1.35);
-    basementDoorLeaf.userData.isPassableDoor = true;
-    group.add(basementDoorLeaf);
+    basementDoorLeaf.position.x = 0.37;
+    basementDoorPivot.add(basementDoorLeaf);
+    markDoorPivot(basementDoorPivot, {
+      id: 'gf-basement-stairs',
+      label: 'Drzwi zejścia do piwnicy',
+      closedAngle: 0,
+      openAngle: 1.48,
+      initialOpen: false,
+      materialType: 'wood',
+    });
+    group.add(basementDoorPivot);
 
-    // 2. Zamknięte skrzydło drzwi do WC (0,60 × 2,00 m na Z = -1.35 m, X = +1.45 m – u dołu zdjęcia z wnętrza!)
+    // 2. Zamknięte skrzydło drzwi do WC (0,60 × 2,00 m na Z = -1.35 m, X = +1.16..+1.74 m)
+    const wcDoorPivot = new THREE.Group();
+    wcDoorPivot.position.set(1.16, y0 + 0.99, -1.35);
     const wcDoorLeaf = new THREE.Mesh(
       new THREE.BoxGeometry(0.58, 1.98, 0.04),
       this.mats.doorWood
     );
-    wcDoorLeaf.position.set(1.45, y0 + 0.99, -1.35);
-    wcDoorLeaf.userData.isPassableDoor = true;
-    group.add(wcDoorLeaf);
+    wcDoorLeaf.position.x = 0.29;
+    wcDoorPivot.add(wcDoorLeaf);
+    markDoorPivot(wcDoorPivot, {
+      id: 'gf-wc',
+      label: 'Drzwi WC (Parter)',
+      closedAngle: 0,
+      openAngle: 1.48,
+      initialOpen: false,
+      materialType: 'wood',
+    });
+    group.add(wcDoorPivot);
 
-    // 3. Otwarte przeszklone skrzydło drzwi do Pokoju frontowego (12,52 m²) na Z = -2.45 m (X od +1.10 do +1.90 m)
-    //    Uchylone do wnętrza pokoju, z szybą ornamentową (dokładnie jak u góry zdjęcia z wnętrza!)
+    // 3. Otwarte przeszklone skrzydło drzwi do Pokoju frontowego (12,52 m²) na Z = -2.45 m
     const studyDoorPivot = new THREE.Group();
-    studyDoorPivot.userData.isPassableDoor = true;
     studyDoorPivot.position.set(1.12, y0 + 1.00, -2.48);
     const studyLeafFrame = new THREE.Mesh(
       new THREE.BoxGeometry(0.76, 1.98, 0.04),
@@ -1801,13 +1923,20 @@ export class BuildingBuilder {
       this.mats.glassOrnamental
     );
     studyLeafGlass.position.set(0.38, 0.14, 0);
+    studyLeafGlass.userData.isGlassPane = true;
     studyDoorPivot.add(studyLeafFrame, studyLeafGlass);
-    studyDoorPivot.rotation.y = 1.25; // otwarte do wnętrza pokoju
+    markDoorPivot(studyDoorPivot, {
+      id: 'gf-study',
+      label: 'Drzwi Pokoju frontowego',
+      closedAngle: 0,
+      openAngle: 1.42,
+      initialOpen: true,
+      materialType: 'glass',
+    });
     group.add(studyDoorPivot);
 
-    // 4. Otwarte przeszklone skrzydło drzwi do Kuchni (5,96 m²) na X = +1.95 m (Z od -2.30 do -1.50 m)
+    // 4. Otwarte przeszklone skrzydło drzwi do Kuchni (5,96 m²) na X = +1.95 m
     const kitchenDoorPivot = new THREE.Group();
-    kitchenDoorPivot.userData.isPassableDoor = true;
     kitchenDoorPivot.position.set(1.98, y0 + 1.00, -2.28);
     const kitchenLeafFrame = new THREE.Mesh(
       new THREE.BoxGeometry(0.04, 1.98, 0.76),
@@ -1819,8 +1948,16 @@ export class BuildingBuilder {
       this.mats.glassOrnamental
     );
     kitchenLeafGlass.position.set(0, 0.14, 0.38);
+    kitchenLeafGlass.userData.isGlassPane = true;
     kitchenDoorPivot.add(kitchenLeafFrame, kitchenLeafGlass);
-    kitchenDoorPivot.rotation.y = 1.15; // otwarte do kuchni
+    markDoorPivot(kitchenDoorPivot, {
+      id: 'gf-kitchen',
+      label: 'Drzwi Kuchni',
+      closedAngle: 0,
+      openAngle: 1.38,
+      initialOpen: true,
+      materialType: 'glass',
+    });
     group.add(kitchenDoorPivot);
 
     // f) Charakterystyczne detale ze zdjęcia nr 1:
@@ -1830,6 +1967,7 @@ export class BuildingBuilder {
       this.mats.railingSteel
     );
     standPole.position.set(0.09, y0 + 0.31, -1.48);
+    standPole.userData.isObstacleCollider = true;
     const plantBush = new THREE.Mesh(
       new THREE.DodecahedronGeometry(0.16, 1),
       this.mats.grapevineLeaf
@@ -1886,25 +2024,43 @@ export class BuildingBuilder {
     bathTub.userData.isObstacleCollider = true;
     group.add(bathTub);
 
-    // 2. Stolarka drzwiowa i boazeria wokół korytarza I piętra (3,76 m², zgodnie ze zdjęciami 3 i 4):
-    // a) Zamknięte białe drzwi do WC I piętra (0,80 m²) z kwadratowym okienkiem z mrożonego szkła (Z = -1.35 m, X = +1.42 m)
+    const markDoorPivot = (pivot, doorDef) => {
+      pivot.userData.doorDef = doorDef;
+      pivot.traverse((c) => {
+        if (c !== pivot && c.isMesh) {
+          c.userData.isInteractiveDoor = true;
+        }
+      });
+    };
+
+    // 2. Stolarka drzwiowa i boazeria wokół korytarza I piętra (3,76 m²):
+    // a) Białe drzwi do WC I piętra (0,80 m²) z kwadratowym okienkiem z mrożonego szkła
+    const wc1DoorPivot = new THREE.Group();
+    wc1DoorPivot.position.set(1.13, y0 + 0.98, -1.35);
     const wc1DoorLeaf = new THREE.Mesh(
       new THREE.BoxGeometry(0.58, 1.96, 0.04),
       this.mats.windowFrameWhite
     );
-    wc1DoorLeaf.position.set(1.42, y0 + 0.98, -1.35);
-    wc1DoorLeaf.userData.isPassableDoor = true;
+    wc1DoorLeaf.position.set(0.29, 0, 0);
     const wc1Glass = new THREE.Mesh(
       new THREE.BoxGeometry(0.28, 0.34, 0.05),
       this.mats.glassOrnamental
     );
-    wc1Glass.position.set(1.42, y0 + 1.42, -1.35);
-    wc1Glass.userData.isPassableDoor = true;
-    group.add(wc1DoorLeaf, wc1Glass);
+    wc1Glass.position.set(0.29, 0.44, 0);
+    wc1Glass.userData.isGlassPane = true;
+    wc1DoorPivot.add(wc1DoorLeaf, wc1Glass);
+    markDoorPivot(wc1DoorPivot, {
+      id: 'f1-wc',
+      label: 'Drzwi WC (I piętro)',
+      closedAngle: 0,
+      openAngle: 1.48,
+      initialOpen: false,
+      materialType: 'wood',
+    });
+    group.add(wc1DoorPivot);
 
-    // b) Uchylone białe przeszklone drzwi do Łazienki (5,06 m²) na X = +1.95 m (Z od -2.20 do -1.45 m, w centrum zdjęcia nr 4!)
+    // b) Otwierane do wnętrza białe przeszklone drzwi do Łazienki (5,06 m²) na X = +1.95 m
     const bathDoorPivot = new THREE.Group();
-    bathDoorPivot.userData.isPassableDoor = true;
     bathDoorPivot.position.set(1.94, y0 + 0.98, -2.18);
     const bathLeaf = new THREE.Mesh(
       new THREE.BoxGeometry(0.04, 1.96, 0.72),
@@ -1916,13 +2072,20 @@ export class BuildingBuilder {
       this.mats.glassOrnamental
     );
     bathGlass.position.set(0, 0.16, 0.36);
+    bathGlass.userData.isGlassPane = true;
     bathDoorPivot.add(bathLeaf, bathGlass);
-    bathDoorPivot.rotation.y = -0.38; // lekko uchylone jak na zdjęciu nr 4
+    markDoorPivot(bathDoorPivot, {
+      id: 'f1-bath',
+      label: 'Drzwi Łazienki',
+      closedAngle: 0,
+      openAngle: 1.42,
+      initialOpen: true,
+      materialType: 'glass',
+    });
     group.add(bathDoorPivot);
 
-    // c) Otwarte drzwi do Sypialni Wschodniej (16,58 m²) na Z = -2.95 m (X od +1.08 do +1.88 m, zgodnie z detalem korytarza!)
+    // c) Otwarte drzwi do Sypialni Wschodniej (16,58 m²) na Z = -2.95 m
     const eastBedDoorPivot = new THREE.Group();
-    eastBedDoorPivot.userData.isPassableDoor = true;
     eastBedDoorPivot.position.set(1.10, y0 + 0.98, -2.98);
     const eastBedLeaf = new THREE.Mesh(
       new THREE.BoxGeometry(0.76, 1.96, 0.04),
@@ -1930,13 +2093,18 @@ export class BuildingBuilder {
     );
     eastBedLeaf.position.x = 0.38;
     eastBedDoorPivot.add(eastBedLeaf);
-    eastBedDoorPivot.rotation.y = 1.25; // otwarte do sypialni wschodniej
+    markDoorPivot(eastBedDoorPivot, {
+      id: 'f1-east-bed',
+      label: 'Drzwi Sypialni wschodniej',
+      closedAngle: 0,
+      openAngle: 1.42,
+      initialOpen: true,
+      materialType: 'wood',
+    });
     group.add(eastBedDoorPivot);
 
-    // d) Białe drzwi z górnym przeszkleniem do Sypialni Głównej (25,58 m²) na X = -1.00 m (Z od -3.01 do -2.21 m,
-    //    na końcu 73 cm przejścia przed schodami strychowymi – dokładnie jak na załączonym rzucie korytarza!)
+    // d) Białe drzwi z górnym przeszkleniem do Sypialni Głównej (25,58 m²) na X = -1.00 m (otwierane do sypialni -X)
     const masterDoorPivot = new THREE.Group();
-    masterDoorPivot.userData.isPassableDoor = true;
     masterDoorPivot.position.set(-1.02, y0 + 0.98, -2.23);
     const masterLeaf = new THREE.Mesh(
       new THREE.BoxGeometry(0.04, 1.96, 0.76),
@@ -1948,8 +2116,16 @@ export class BuildingBuilder {
       this.mats.glassOrnamental
     );
     masterGlass.position.set(0, 0.45, -0.38);
+    masterGlass.userData.isGlassPane = true;
     masterDoorPivot.add(masterLeaf, masterGlass);
-    masterDoorPivot.rotation.y = -0.85; // uchylone do wnętrza sypialni głównej
+    markDoorPivot(masterDoorPivot, {
+      id: 'f1-master-bed',
+      label: 'Drzwi Sypialni głównej',
+      closedAngle: 0,
+      openAngle: 1.42,
+      initialOpen: true,
+      materialType: 'glass',
+    });
     group.add(masterDoorPivot);
 
     // e) Szafa wnękowa Sypialni Głównej (szer. 63 cm × dł. 282 cm, oznaczona przekątnymi na rzucie 1966 r.:
@@ -1984,8 +2160,10 @@ export class BuildingBuilder {
       gardenSet.position.set(-6.85, y0, -3.10);
       const roundTop = new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.48, 0.03, 20), this.mats.castIronWhite);
       roundTop.position.y = 0.72;
+      roundTop.userData.isObstacleCollider = true;
       const ped = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.28, 0.70, 12), this.mats.castIronWhite);
       ped.position.y = 0.35;
+      ped.userData.isObstacleCollider = true;
       gardenSet.add(roundTop, ped);
       group.add(gardenSet);
     }

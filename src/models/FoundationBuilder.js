@@ -109,7 +109,7 @@ export class FoundationBuilder {
       material: this.mats.plinthPlaster,
       openings: [
         // Brama garażowa 2.10 x 2.00 m (w osi zjazdu Z = -4.15 m)
-        { cMin: -5.20, cMax: -3.10, yMin: yFloor, yMax: yFloor + 2.00, type: 'garageDoor' },
+        { cMin: -5.20, cMax: -3.10, yMin: yFloor, yMax: yFloor + 2.00, type: 'garageDoor', label: 'Brama Garażu I (podjazd)', id: 'bsm-garage-main' },
         // Okno kotłowni 1.00 x 0.60 m
         { cMin: -1.95, cMax: -0.95, yMin: yFloor + 1.32, yMax: yFloor + 1.92, type: 'basementWin' },
       ],
@@ -199,7 +199,7 @@ export class FoundationBuilder {
         yTop: yCeil,
         material: this.mats.interiorWall,
         openings: [
-          { cMin: -4.28, cMax: -2.98, yMin: yFloor, yMax: yFloor + 2.00, type: 'usableRoomDoor' },
+          { cMin: -4.28, cMax: -2.98, yMin: yFloor, yMax: yFloor + 2.00, type: 'usableRoomDoor', label: 'Drzwi pracowni pod werandą', id: 'bsm-veranda-workroom' },
         ],
       });
 
@@ -235,7 +235,7 @@ export class FoundationBuilder {
       yTop: yCeil,
       material: this.mats.basementWall,
       openings: [
-        { cMin: -4.75, cMax: -3.15, yMin: yFloor, yMax: yFloor + 2.00, type: 'doubleDoor' },
+        { cMin: -4.75, cMax: -3.15, yMin: yFloor, yMax: yFloor + 2.00, type: 'doubleDoor', label: 'Wrota między garażami', id: 'bsm-garages-between' },
       ],
     });
 
@@ -265,7 +265,7 @@ export class FoundationBuilder {
       yTop: yCeil,
       material: this.mats.basementWall,
       openings: [
-        { cMin: -2.35, cMax: -1.55, yMin: yFloor, yMax: yFloor + 2.00, type: 'singleDoor' },
+        { cMin: -2.35, cMax: -1.55, yMin: yFloor, yMax: yFloor + 2.00, type: 'singleDoor', label: 'Drzwi kotłowni', id: 'bsm-boiler-door' },
       ],
     });
 
@@ -281,7 +281,7 @@ export class FoundationBuilder {
       yTop: yCeil,
       material: this.mats.basementWall,
       openings: [
-        { cMin: -2.10, cMax: -1.30, yMin: yFloor, yMax: yFloor + 1.85, type: 'singleDoor' },
+        { cMin: -2.10, cMax: -1.30, yMin: yFloor, yMax: yFloor + 1.85, type: 'singleDoor', label: 'Drzwi schowka pod schodami', id: 'bsm-storage-door' },
       ],
     });
 
@@ -298,7 +298,7 @@ export class FoundationBuilder {
       yTop: yCeil,
       material: this.mats.basementWall,
       openings: [
-        { cMin: -0.88, cMax: -0.08, yMin: yFloor, yMax: yFloor + 2.00, type: 'singleDoor' },
+        { cMin: -0.88, cMax: -0.08, yMin: yFloor, yMax: yFloor + 2.00, type: 'singleDoor', label: 'Drzwi piwniczne do garażu', id: 'bsm-stairs-garage' },
         { cMin: 0.14,  cMax: 0.92,  yMin: yFloor, yMax: yFloor + 2.00, type: 'openArch' },
       ],
     });
@@ -375,6 +375,15 @@ export class FoundationBuilder {
     const width = op.cMax - op.cMin;
     const height = op.yMax - op.yMin;
 
+    const markDoorPivot = (pivot, doorDef) => {
+      pivot.userData.doorDef = doorDef;
+      pivot.traverse((c) => {
+        if (c !== pivot && c.isMesh) {
+          c.userData.isInteractiveDoor = true;
+        }
+      });
+    };
+
     if (op.type === 'basementWin') {
       const winGroup = new THREE.Group();
       winGroup.userData.isWindowCollider = true;
@@ -391,6 +400,7 @@ export class FoundationBuilder {
         axis === 'Z' ? width - 0.1 : 0.02
       );
       const glass = new THREE.Mesh(glassGeo, this.mats.glassClear);
+      glass.userData.isGlassPane = true;
       winGroup.add(frame, glass);
       if (axis === 'X') {
         winGroup.position.set(cMid, yMid, fixedCoord);
@@ -399,16 +409,43 @@ export class FoundationBuilder {
       }
       parentGroup.add(winGroup);
     } else if (op.type === 'garageDoor') {
-      // Dwuskrzydłowa brama garażowa (lekko uchylona dla lepszej czytelności wjazdu)
+      // Dwuskrzydłowa brama garażowa zawiasowa (otwierana na zewnątrz na podjazd)
       const leafW = width * 0.5 - 0.02;
+      const doorId = op.id || `bsm-garage-${Math.round(fixedCoord * 10)}`;
+      const label = op.label || 'Brama garażowa';
       const leafGeo = new THREE.BoxGeometry(0.06, height - 0.04, leafW);
+
+      const leftPivot = new THREE.Group();
+      leftPivot.position.set(fixedCoord, yMid, op.cMin + 0.01);
       const leftLeaf = new THREE.Mesh(leafGeo, this.mats.garageDoorMat);
-      leftLeaf.position.set(fixedCoord, yMid, op.cMin + leafW * 0.5);
-      leftLeaf.userData.isPassableDoor = true;
+      leftLeaf.position.z = leafW * 0.5;
+      leftPivot.add(leftLeaf);
+      markDoorPivot(leftPivot, {
+        id: `${doorId}-L`,
+        pairId: doorId,
+        label,
+        closedAngle: 0,
+        openAngle: 1.52,
+        initialOpen: false,
+        materialType: 'metal',
+      });
+
+      const rightPivot = new THREE.Group();
+      rightPivot.position.set(fixedCoord, yMid, op.cMax - 0.01);
       const rightLeaf = new THREE.Mesh(leafGeo, this.mats.garageDoorMat);
-      rightLeaf.position.set(fixedCoord, yMid, op.cMax - leafW * 0.5);
-      rightLeaf.userData.isPassableDoor = true;
-      parentGroup.add(leftLeaf, rightLeaf);
+      rightLeaf.position.z = -leafW * 0.5;
+      rightPivot.add(rightLeaf);
+      markDoorPivot(rightPivot, {
+        id: `${doorId}-R`,
+        pairId: doorId,
+        label,
+        closedAngle: 0,
+        openAngle: -1.52,
+        initialOpen: false,
+        materialType: 'metal',
+      });
+
+      parentGroup.add(leftPivot, rightPivot);
     } else if (op.type === 'singleDoor') {
       // Jednoskrzydłowe drzwi piwniczne w ościeżnicy (np. 80 × 200 cm u dołu schodów i do kotłowni)
       const frameThick = Math.max(thickness + 0.02, 0.14);
@@ -423,12 +460,9 @@ export class FoundationBuilder {
         op.yMax - 0.025,
         axis === 'Z' ? cMid : fixedCoord
       );
-      topFrame.userData.isPassableDoor = true;
       parentGroup.add(topFrame);
 
-      // Skrzydło drzwiowe lekko uchylone (35°), aby ułatwić wgląd i przejście awatara
       const leafPivot = new THREE.Group();
-      leafPivot.userData.isPassableDoor = true;
       leafPivot.position.set(
         axis === 'X' ? op.cMin + 0.03 : fixedCoord,
         yMid,
@@ -446,7 +480,14 @@ export class FoundationBuilder {
         axis === 'Z' ? (width - 0.06) * 0.5 : 0
       );
       leafPivot.add(leafMesh);
-      leafPivot.rotation.y = axis === 'X' ? 0.55 : -0.55;
+      markDoorPivot(leafPivot, {
+        id: op.id || `bsm-single-${axis}-${Math.round(cMid * 10)}`,
+        label: op.label || 'Drzwi piwniczne',
+        closedAngle: 0,
+        openAngle: 1.48,
+        initialOpen: true,
+        materialType: 'wood',
+      });
       parentGroup.add(leafPivot);
     } else if (op.type === 'doubleDoor' || op.type === 'usableRoomDoor') {
       // Ościeżnica i dwuskrzydłowe drzwi wewnętrzne (np. 160×200 cm między garażami lub 130×200 cm do pom. pod werandą)
@@ -468,9 +509,10 @@ export class FoundationBuilder {
 
       const leafW = width * 0.5 - 0.03;
       const mat = op.type === 'usableRoomDoor' ? this.mats.windowFrameWhite : this.mats.garageDoorMat;
+      const pairId = op.id || `bsm-double-${Math.round(fixedCoord * 10)}`;
+      const label = op.label || 'Drzwi dwuskrzydłowe piwnicy';
       for (const side of [-1, 1]) {
         const pivot = new THREE.Group();
-        pivot.userData.isPassableDoor = true;
         const zHinge = side < 0 ? op.cMin + 0.02 : op.cMax - 0.02;
         pivot.position.set(fixedCoord, yMid, zHinge);
         const leaf = new THREE.Mesh(
@@ -479,7 +521,15 @@ export class FoundationBuilder {
         );
         leaf.position.set(0, 0, side < 0 ? leafW * 0.5 : -leafW * 0.5);
         pivot.add(leaf);
-        pivot.rotation.y = side < 0 ? 1.15 : -1.15; // otwarte do wnętrza
+        markDoorPivot(pivot, {
+          id: `${pairId}-${side < 0 ? 'N' : 'S'}`,
+          pairId,
+          label,
+          closedAngle: 0,
+          openAngle: side < 0 ? 1.45 : -1.45,
+          initialOpen: true,
+          materialType: 'wood',
+        });
         parentGroup.add(pivot);
       }
     }
@@ -632,6 +682,7 @@ export class FoundationBuilder {
         this.mats.windowFrameWhite
       );
       shelf.position.y = s * 0.42;
+      shelf.userData.isObstacleCollider = true;
       shelfUnit.add(shelf);
     }
     roomGroup.add(shelfUnit);
@@ -706,6 +757,7 @@ export class FoundationBuilder {
       new THREE.BoxGeometry(0.44, 0.72, 0.34),
       this.mats.vaillantWhite
     );
+    vaillantBody.userData.isObstacleCollider = true;
     const panel = new THREE.Mesh(
       new THREE.BoxGeometry(0.18, 0.10, 0.35),
       this.mats.railingSteel
@@ -717,6 +769,7 @@ export class FoundationBuilder {
       this.mats.expansionVesselRed
     );
     vessel.position.set(-0.42, -0.35, 0.05);
+    vessel.userData.isObstacleCollider = true;
 
     vaillantGroup.add(vaillantBody, panel, vessel);
     group.add(vaillantGroup);

@@ -82,6 +82,15 @@ export class UIManager {
       const floorEl = document.getElementById('hud-floor-name');
       const elevEl = document.getElementById('hud-elevation');
       const noclipEl = document.getElementById('hud-noclip-state');
+      const perspBadgeEl = document.getElementById('hud-perspective-badge');
+      const stanceBadgeEl = document.getElementById('hud-stance-badge');
+      const lockHintEl = document.getElementById('hud-pointerlock-hint');
+      const doorPromptEl = document.getElementById('walk-door-prompt');
+
+      const perspBtn = document.getElementById('btn-walk-perspective');
+      const crouchBtn = document.getElementById('btn-walk-crouch');
+      const autoDoorsBtn = document.getElementById('btn-walk-autodoors');
+      const audioBtn = document.getElementById('btn-walk-audio');
       const autoBtn = document.getElementById('btn-hud-autopilot');
       const autoHeaderBtn = document.getElementById('btn-autopilot-header');
       const noclipBtn = document.getElementById('btn-hud-noclip');
@@ -89,6 +98,34 @@ export class UIManager {
       if (floorEl) floorEl.textContent = hud.floorName;
       if (elevEl) elevEl.textContent = hud.elevationText;
       if (noclipEl) noclipEl.textContent = hud.noclip ? 'ON' : 'OFF';
+
+      if (perspBadgeEl) {
+        perspBadgeEl.textContent = hud.firstPerson ? 'FPP' : 'TPP';
+        perspBadgeEl.classList.toggle('is-tpp', !hud.firstPerson);
+      }
+      if (stanceBadgeEl) {
+        stanceBadgeEl.classList.toggle('hidden', !hud.isCrouching);
+      }
+      if (lockHintEl) {
+        const isCoarse = window.matchMedia?.('(pointer: coarse)')?.matches;
+        lockHintEl.classList.toggle('hidden', Boolean(hud.pointerLocked || isCoarse));
+      }
+      if (doorPromptEl) {
+        const showDoor = Boolean(hud.walkMode && hud.doorPrompt);
+        if (showDoor) doorPromptEl.textContent = hud.doorPrompt;
+        doorPromptEl.classList.toggle('hidden', !showDoor);
+      }
+
+      if (perspBtn) {
+        perspBtn.textContent = hud.firstPerson ? '🎥 TPP [C]' : '👁️ FPP [C]';
+        perspBtn.classList.toggle('active', !hud.firstPerson);
+      }
+      if (crouchBtn) crouchBtn.classList.toggle('active', Boolean(hud.isCrouching));
+      if (autoDoorsBtn) autoDoorsBtn.classList.toggle('active', Boolean(hud.autoDoors));
+      if (audioBtn) {
+        audioBtn.textContent = hud.audioMuted ? '🔇 Wyciszone [M]' : '🔊 Dźwięk [M]';
+        audioBtn.classList.toggle('active', !hud.audioMuted);
+      }
       if (autoBtn) autoBtn.classList.toggle('active', Boolean(hud.autopilot));
       if (autoHeaderBtn) autoHeaderBtn.classList.toggle('active', Boolean(hud.autopilot));
       if (noclipBtn) noclipBtn.classList.toggle('active', Boolean(hud.noclip));
@@ -542,14 +579,18 @@ export class UIManager {
         e.preventDefault();
         handleToggleFullscreen();
       } else if (e.code === 'KeyO') {
-        e.preventDefault();
-        handleToggleAutoRotate();
+        if (!this.viewer.cameraManager.walkMode) {
+          e.preventDefault();
+          handleToggleAutoRotate();
+        }
       } else if (e.code === 'KeyB') {
         e.preventDefault();
         this.setTwinModeUI(!this.viewer.isTwinMode);
       } else if (e.code === 'KeyI') {
-        e.preventDefault();
-        this.viewer.cameraManager.setPreset('iso');
+        if (!this.viewer.cameraManager.walkMode) {
+          e.preventDefault();
+          this.viewer.cameraManager.setPreset('iso');
+        }
       } else if (e.code === 'BracketLeft') {
         e.preventDefault();
         this.setPanelCollapsed('left', !this.panelStates.left);
@@ -740,6 +781,10 @@ export class UIManager {
   bindWalkControls() {
     const walkBtn = document.getElementById('btn-walk-mode');
     const autoHeaderBtn = document.getElementById('btn-autopilot-header');
+    const perspBtn = document.getElementById('btn-walk-perspective');
+    const crouchBtn = document.getElementById('btn-walk-crouch');
+    const autoDoorsBtn = document.getElementById('btn-walk-autodoors');
+    const audioBtn = document.getElementById('btn-walk-audio');
     const hudAutoBtn = document.getElementById('btn-hud-autopilot');
     const hudNoclipBtn = document.getElementById('btn-hud-noclip');
     const hudExitBtn = document.getElementById('btn-hud-exit-walk');
@@ -748,6 +793,22 @@ export class UIManager {
       const next = !this.viewer.cameraManager.walkMode;
       this.viewer.cameraManager.setWalkMode(next);
       this.syncWalkHudVisibility(next);
+    });
+
+    perspBtn?.addEventListener('click', () => {
+      this.viewer.cameraManager.togglePerspective();
+    });
+
+    crouchBtn?.addEventListener('click', () => {
+      this.viewer.cameraManager.toggleCrouch();
+    });
+
+    autoDoorsBtn?.addEventListener('click', () => {
+      this.viewer.cameraManager.toggleAutoDoors();
+    });
+
+    audioBtn?.addEventListener('click', () => {
+      this.viewer.cameraManager.toggleAudioMute();
     });
 
     autoHeaderBtn?.addEventListener('click', () => {
@@ -772,6 +833,9 @@ export class UIManager {
     document.getElementById('btn-walk-mode')?.classList.toggle('active', Boolean(isWalking));
     document.getElementById('walk-hud')?.classList.toggle('hidden', !isWalking);
     document.getElementById('walk-crosshair')?.classList.toggle('hidden', !isWalking);
+    if (!isWalking) {
+      document.getElementById('walk-door-prompt')?.classList.add('hidden');
+    }
   }
 
   bindMeasureTool() {

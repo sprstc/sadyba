@@ -346,6 +346,7 @@ export class RoofTrussBuilder {
     );
     ventStack.position.set(2.35, yEaves + 1.125, -2.40);
     ventStack.castShadow = true;
+    ventStack.userData.isWallCollider = true;
     group.add(ventStack);
 
     const ventCap = new THREE.Mesh(
@@ -559,6 +560,7 @@ export class RoofTrussBuilder {
         m.get('windowGlass')
       );
       glass.position.set(depth / 2 + 0.01, height / 2, 0);
+      glass.userData.isGlassPane = true;
       dGroup.add(glass);
 
       // Szpros pionowy

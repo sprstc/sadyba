@@ -70,29 +70,38 @@
   <!-- Warstwa etykiet 3D->2D (wymiary architektoniczne, rzędne, oznaczenia belek Kleina) -->
   <div id="labels-container" class="labels-layer"></div>
 
-  <!-- Celownik i HUD trybu spaceru TPP -->
+  <!-- Celownik, podpowiedź drzwi i HUD trybu spaceru 3D -->
   <div id="walk-crosshair" class="walk-crosshair hidden" aria-hidden="true">
     <div class="crosshair-dot"></div>
     <div class="crosshair-ring"></div>
   </div>
+  <div id="walk-door-prompt" class="walk-door-prompt glass-panel hidden" aria-live="polite"></div>
 
   <div id="walk-hud" class="walk-hud hidden">
     <div class="walk-hud-main glass-panel">
       <div class="walk-hud-row">
-        <span class="hud-badge gold">Spacer</span>
+        <span id="hud-perspective-badge" class="hud-chip">FPP</span>
         <span id="hud-floor-name" class="hud-value">Parter (±0.00 = +1.60 m)</span>
         <span id="hud-elevation" class="hud-mono">Y: +1.60 m</span>
-        <span id="hud-collision" class="hud-warning hidden">⚠️ Przeszkoda</span>
+        <span id="hud-stance-badge" class="hud-stance hidden">🧎 Kucanie</span>
+        <span id="hud-pointerlock-hint" class="hud-hint">Kliknij scenę, aby obracać myszą</span>
       </div>
       <div class="walk-hud-controls">
         <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Ruch</span>
         <span><kbd>Shift</kbd> Bieg</span>
         <span><kbd>Spacja</kbd> Skok</span>
+        <span><kbd>Ctrl</kbd>/<kbd>X</kbd> Kucanie</span>
+        <span><kbd>E</kbd> Drzwi</span>
+        <span><kbd>C</kbd> Kamera FPP/TPP</span>
         <span><kbd>0</kbd>–<kbd>3</kbd> Piętra</span>
         <span><kbd>V</kbd> Noclip: <strong id="hud-noclip-state">OFF</strong></span>
         <span><kbd>Esc</kbd> Wyjście</span>
       </div>
       <div class="walk-hud-actions">
+        <button id="btn-walk-perspective" class="btn-action" type="button">🎥 TPP [C]</button>
+        <button id="btn-walk-crouch" class="btn-action" type="button">🧎 Kucnij [X]</button>
+        <button id="btn-walk-autodoors" class="btn-action active" type="button">🚪 Auto-drzwi</button>
+        <button id="btn-walk-audio" class="btn-action active" type="button">🔊 Dźwięk [M]</button>
         <button id="btn-hud-autopilot" class="btn-action" type="button">▶ Autopilot</button>
         <button id="btn-hud-noclip" class="btn-action" type="button">👻 Noclip</button>
         <button id="btn-hud-exit-walk" class="btn-action" type="button">✕ Zakończ spacer</button>
@@ -126,7 +135,7 @@
     </div>
 
     <nav class="header-actions" aria-label="Akcje">
-      <button id="btn-walk-mode" class="btn-secondary desktop-only" type="button" title="Tryb spaceru z awatarem 1,80 m (WASD + mysz)">
+      <button id="btn-walk-mode" class="btn-secondary desktop-only" type="button" title="Tryb spaceru 3D FPP / TPP (WASD + mysz, C = kamera, E = drzwi)">
         🚶 <span class="btn-label">Spacer</span>
       </button>
       <button id="btn-measure-tool" class="btn-secondary" type="button" title="Miarka 3D – kliknij 2 punkty na modelu">

@@ -6,6 +6,7 @@
  */
 
 import * as THREE from 'three';
+import { Octree } from 'three/addons/math/Octree.js';
 import { ELEVATIONS, ROOMS_SPEC } from '../data/houseSpec.js';
 import { MaterialsManager } from '../models/Materials.js';
 import { FoundationBuilder } from '../models/FoundationBuilder.js';
@@ -14,6 +15,7 @@ import { BuildingBuilder } from '../models/BuildingBuilder.js';
 import { RoofTrussBuilder } from '../models/RoofTrussBuilder.js';
 import { SurroundingsBuilder } from '../models/SurroundingsBuilder.js';
 import { HumanAvatar } from './HumanAvatar.js';
+import { DoorManager } from './DoorManager.js';
 import { SectionManager } from './SectionManager.js';
 import { CameraManager } from './CameraManager.js';
 
@@ -39,7 +41,7 @@ export class Viewer {
     this.camera = new THREE.PerspectiveCamera(
       aspect < 1.0 ? 56 : 46,
       aspect,
-      0.1,
+      0.06,
       260
     );
 
@@ -114,6 +116,9 @@ export class Viewer {
         if (this.callbacks.onWalkHudUpdate) this.callbacks.onWalkHudUpdate(hudData);
       }
     );
+
+    this.doorManager = new DoorManager(this.cameraManager.soundEngine);
+    this.cameraManager.setDoorManager(this.doorManager);
 
     this.layerStates = {
       roofCover: true,
@@ -343,11 +348,21 @@ export class Viewer {
       dimensions: [this.dimensionsGroup],
     };
 
-    // Przywróć aktualny stan widoczności warstw i Exploded View
+    // Uzupełnienie trawnika z 1955 r. zamiast werandy z 1966 r.
+    if (this.surroundingsGroup) {
+      const patchB = this.surroundingsGroup.getObjectByName('Grass_Infill_1955_B');
+      const patchA = this.surroundingsGroup.getObjectByName('Grass_Infill_1955_A');
+      if (patchB) patchB.visible = !includeVeranda1966;
+      if (patchA) patchA.visible = !includeVeranda1966;
+    }
+
+    // Przywróć aktualny stan widoczności warstw i Exploded View bez wielokrotnej odbudowy Octree
+    this._suppressColliderRebuild = true;
     Object.entries(this.layerStates).forEach(([key, vis]) => {
       this.setLayerVisibility(key, vis);
     });
     this.setExplodedFactor(this.explodeFactor);
+    this._suppressColliderRebuild = false;
 
     if (this.selectedRoomId) {
       this.selectRoomById(this.selectedRoomId, false);
@@ -357,18 +372,22 @@ export class Viewer {
   }
 
   /**
-   * Aktualizuje bryły kolizyjne AABB ścian/przeszkód oraz siatki dla Raycastera kamery TPP,
-   * dzięki czemu ani postać, ani kamera podążająca za nią nie mogą wchodzić w ściany.
+   * Zbiera interaktywne drzwi oraz buduje trójkątne drzewo kolizji Octree całej sceny
+   * (ściany, stropy, schody, połacie dachu, meble i teren z uwzględnieniem odbicia lustrzanego Segmentu A).
    */
   updateWalkColliders() {
     if (!this.cameraManager || !this.segmentBRoot) return;
 
+    const t0 = performance.now();
     this.scene.updateMatrixWorld(true);
 
-    const avatarBoxes = [];
-    const wallBoxes = [];
-    const cameraMeshes = [];
-    const doorMeshes = [];
+    const doorRoots = [this.segmentBRoot];
+    if (this.surroundingsGroup) doorRoots.push(this.surroundingsGroup);
+    if (this.isTwinMode && this.segmentARoot) doorRoots.push(this.segmentARoot);
+
+    if (this.doorManager) {
+      this.doorManager.collectDoors(doorRoots, this.scene);
+    }
 
     const hasFlagInAncestors = (obj, flagName) => {
       let cur = obj;
@@ -397,10 +416,57 @@ export class Viewer {
       return false;
     };
 
-    const roots = [this.segmentBRoot, this.surroundingsGroup];
-    if (this.isTwinMode && this.segmentARoot) {
-      roots.push(this.segmentARoot);
-    }
+    const mats = this.materials.materials || {};
+    const woodMats = new Set([
+      mats.oakParquet,
+      mats.oakStairs,
+      mats.atticPineFloor,
+      mats.wainscotingWood,
+      mats.doorWood,
+      mats.roofTimber,
+      mats.windowFrameWhite,
+    ]);
+    const tileMats = new Set([
+      mats.terrazzo,
+      mats.verandaMosaic,
+      mats.terraceTiles,
+      mats.clinkerStairs,
+      mats.roofTileKarpiowka,
+      mats.ridgeTileMat,
+    ]);
+    const glassMats = new Set([mats.glassClear, mats.glassOrnamental]);
+
+    const classifySurface = (mat) => {
+      if (!mat) return 'concrete';
+      if (mat === mats.grass) return 'grass';
+      if (woodMats.has(mat)) return 'wood';
+      if (tileMats.has(mat)) return 'tile';
+      return 'concrete';
+    };
+
+    const worldOctree = new Octree();
+    const roots = [this.segmentBRoot];
+    if (this.surroundingsGroup) roots.push(this.surroundingsGroup);
+    if (this.utilityPoleGroup) roots.push(this.utilityPoleGroup);
+    if (this.isTwinMode && this.segmentARoot) roots.push(this.segmentARoot);
+
+    const _v1 = new THREE.Vector3();
+    const _v2 = new THREE.Vector3();
+    const _v3 = new THREE.Vector3();
+    const _e1 = new THREE.Vector3();
+    const _e2 = new THREE.Vector3();
+
+    const addTri = (a, b, c, surfaceType, isWindowGlass, isInvisibleCollider) => {
+      _e1.subVectors(b, a);
+      _e2.subVectors(c, a);
+      if (_e1.cross(_e2).lengthSq() < 1e-10) return;
+
+      const tri = new THREE.Triangle(a.clone(), b.clone(), c.clone());
+      tri.surfaceType = surfaceType;
+      tri.isWindowGlass = isWindowGlass;
+      tri.isInvisibleCollider = isInvisibleCollider;
+      worldOctree.addTriangle(tri);
+    };
 
     for (const root of roots) {
       if (!root || !root.visible) continue;
@@ -409,38 +475,92 @@ export class Viewer {
         if (!isHierarchyVisible(child)) return;
         if (child.userData && child.userData.roomSpec) return;
         if (isInsideLayer(child, 'Layer_Vines') || isInsideLayer(child, 'Layer_Dimensions')) return;
+        if (hasFlagInAncestors(child, 'isInteractiveDoor')) return;
+        if (child.geometry.type === 'TorusGeometry') return;
 
-        const isPassableDoor = hasFlagInAncestors(child, 'isPassableDoor');
-        if (isPassableDoor) {
-          doorMeshes.push(child);
-          return;
-        }
+        const posAttr = child.geometry.attributes?.position;
+        if (!posAttr || posAttr.count < 3) return;
 
-        const isWall = Boolean(child.userData && child.userData.isWallCollider);
-        const isWin = hasFlagInAncestors(child, 'isWindowCollider');
-        const isObstacle = Boolean(child.userData && child.userData.isObstacleCollider);
+        const mat = Array.isArray(child.material) ? child.material[0] : child.material;
+        const surfaceType = classifySurface(mat);
+        const isInvisibleCollider = Boolean(mat && mat.visible === false);
+        const isWindowGlass = Boolean(child.userData?.isGlassPane || (mat && glassMats.has(mat)));
 
-        if (isWall || isWin || isObstacle) {
-          const box = new THREE.Box3().setFromObject(child);
-          if (!box.isEmpty()) {
-            avatarBoxes.push(box);
-            if (isWall || isWin) {
-              wallBoxes.push(box);
+        const matrix = child.matrixWorld;
+        const flipWinding = matrix.determinant() < 0;
+        const index = child.geometry.index;
+
+        if (index) {
+          const count = index.count;
+          for (let i = 0; i + 2 < count; i += 3) {
+            _v1.fromBufferAttribute(posAttr, index.getX(i)).applyMatrix4(matrix);
+            _v2.fromBufferAttribute(posAttr, index.getX(i + 1)).applyMatrix4(matrix);
+            _v3.fromBufferAttribute(posAttr, index.getX(i + 2)).applyMatrix4(matrix);
+            if (flipWinding) {
+              addTri(_v1, _v3, _v2, surfaceType, isWindowGlass, isInvisibleCollider);
+            } else {
+              addTri(_v1, _v2, _v3, surfaceType, isWindowGlass, isInvisibleCollider);
             }
           }
-        }
-
-        if (child.material && child.material.visible !== false) {
-          cameraMeshes.push(child);
+        } else {
+          const count = posAttr.count;
+          for (let i = 0; i + 2 < count; i += 3) {
+            _v1.fromBufferAttribute(posAttr, i).applyMatrix4(matrix);
+            _v2.fromBufferAttribute(posAttr, i + 1).applyMatrix4(matrix);
+            _v3.fromBufferAttribute(posAttr, i + 2).applyMatrix4(matrix);
+            if (flipWinding) {
+              addTri(_v1, _v3, _v2, surfaceType, isWindowGlass, isInvisibleCollider);
+            } else {
+              addTri(_v1, _v2, _v3, surfaceType, isWindowGlass, isInvisibleCollider);
+            }
+          }
         }
       });
     }
 
+    // Zewnętrzna siatka bezpieczeństwa podłoża Y = -0.002 m z wycięciem na piwnice i pochylnie garażowe
+    const xRear = this.eraMode === '1966' ? -8.20 : -5.50;
+    const xs = [-45, xRear, 5.50, 10.50, 45];
+    const zs = [-45, -6.08, -5.60, -2.70, 0.00, 2.70, 5.60, 6.08, 45];
+    const groundY = -0.002;
+    const hasBasement = Boolean(this.layerStates.basement);
+
+    for (let xi = 0; xi < xs.length - 1; xi++) {
+      const x0 = xs[xi];
+      const x1 = xs[xi + 1];
+      const cx = (x0 + x1) * 0.5;
+      for (let zi = 0; zi < zs.length - 1; zi++) {
+        const z0 = zs[zi];
+        const z1 = zs[zi + 1];
+        const cz = (z0 + z1) * 0.5;
+
+        if (hasBasement) {
+          const inBHouse = cx > xRear && cx < 5.50 && cz > -6.08 && cz < 0.00;
+          const inBRamp = cx > 5.50 && cx < 10.50 && cz > -5.60 && cz < -2.70;
+          if (inBHouse || inBRamp) continue;
+
+          if (this.isTwinMode) {
+            const inAHouse = cx > xRear && cx < 5.50 && cz > 0.00 && cz < 6.08;
+            const inARamp = cx > 5.50 && cx < 10.50 && cz > 2.70 && cz < 5.60;
+            if (inAHouse || inARamp) continue;
+          }
+        }
+
+        const p00 = new THREE.Vector3(x0, groundY, z0);
+        const p01 = new THREE.Vector3(x0, groundY, z1);
+        const p11 = new THREE.Vector3(x1, groundY, z1);
+        const p10 = new THREE.Vector3(x1, groundY, z0);
+        addTri(p00, p01, p11, 'grass', false, false);
+        addTri(p00, p11, p10, 'grass', false, false);
+      }
+    }
+
+    worldOctree.build();
+    this._lastOctreeBuildMs = performance.now() - t0;
+
     this.cameraManager.setColliders({
-      avatarBoxes,
-      wallBoxes,
-      cameraMeshes,
-      doorMeshes,
+      worldOctree,
+      isTwinMode: this.isTwinMode,
     });
   }
 
@@ -487,7 +607,7 @@ export class Viewer {
 
     applyExplode(this.segmentBRoot);
     applyExplode(this.segmentARoot);
-    this.updateWalkColliders();
+    if (!this._suppressColliderRebuild) this.updateWalkColliders();
   }
 
   /**
@@ -502,7 +622,7 @@ export class Viewer {
         if (obj) obj.visible = Boolean(visible);
       });
     }
-    this.updateWalkColliders();
+    if (!this._suppressColliderRebuild) this.updateWalkColliders();
   }
 
   /**
@@ -679,6 +799,14 @@ export class Viewer {
       requestAnimationFrame(animate);
       if (this.contextLost) return;
       const dt = Math.min(this.clock.getDelta(), 0.1);
+
+      if (this.doorManager) {
+        this.doorManager.update(
+          dt,
+          this.cameraManager.playerPos,
+          this.cameraManager.walkMode && !this.cameraManager.noclip
+        );
+      }
 
       this.cameraManager.update(dt);
 
