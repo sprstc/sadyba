@@ -180,13 +180,13 @@ export class RoofTrussBuilder {
       );
       roofTrussGroup.add(rafterW);
 
-      // Podwójne kleszcze ciesielskie (2 x 5x14 cm) na poziomie płatwi
+      // Podwójne kleszcze / jętki ciesielskie (2 x 5x12 cm) z pełnym prześwitem 1,77 m nad wyjściem ze schodów strychowych
       for (const sideOffset of [-0.08, 0.08]) {
         const collar = new THREE.Mesh(
-          new THREE.BoxGeometry(xPurlin * 2 + 0.55, 0.14, 0.05),
+          new THREE.BoxGeometry(3.30, 0.12, 0.05),
           m.get('pineTimber')
         );
-        collar.position.set(0, yPurlin + 0.08, zR + sideOffset);
+        collar.position.set(0, yPurlin + 0.44, zR + sideOffset);
         collar.castShadow = true;
         collar.name = 'Kleszcze podwójne 2×(5×14 cm)';
         roofTrussGroup.add(collar);

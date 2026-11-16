@@ -140,21 +140,23 @@ export class FloorKleinBuilder {
     };
 
     // Pasma w traktach pełnych:
-    // Trakt wschodni (od ściany frontowej X = +5.12 do klatki X = +2.05)
-    addCeramicBay(2.05, 3.15, zNorthWallInner, zSouthWallInner);
+    // Trakt wschodni (od ściany frontowej X = +5.12 do klatki/WC X = +2.22)
+    addCeramicBay(2.22, 3.15, zNorthWallInner, zSouthWallInner);
     addCeramicBay(3.15, 4.30, zNorthWallInner, zSouthWallInner);
     addCeramicBay(4.30, 5.15, zNorthWallInner, zSouthWallInner);
 
     // Pasmo środkowe obok klatki schodowej (część północna Z od -5.85 do wymianu, z otworem klatki po południu)
     const isBasementSlab = levelName === 'Klein_Over_Basement';
-    const zWestBayEnd = isBasementSlab ? -2.65 : -2.21;
+    const isGroundSlab = levelName === 'Klein_Over_GroundFloor';
+    const zWestBayEnd = isBasementSlab ? -2.65 : -2.19;
     addCeramicBay(-1.10, -0.02, zNorthWallInner, zWestBayEnd);
     addCeramicBay(-0.02, 0.90, zNorthWallInner, zStairTrimmer);
-    addCeramicBay(0.90, 2.05, zNorthWallInner, zStairTrimmer);
-    // W stropie nad piwnicą przejście korytarza do drzwi piwnicznych sięga Z = -1.35 m, a na wyższych stropach podest kończy się na Z = -2.01 m (wyjście schodów)
-    addCeramicBay(0.02, 1.05, zStairTrimmer, isBasementSlab ? -1.35 : -2.01);
-    // Podest WC przy klatce (X od +1.05 do +2.05, Z od -2.85 do -0.25)
-    addCeramicBay(1.05, 2.05, zStairTrimmer, zSouthWallInner);
+    addCeramicBay(0.90, 2.22, zNorthWallInner, zStairTrimmer);
+    // W stropie nad piwnicą przejście sięga Z = -1.35 m, nad parterem podest I piętra Z = -1.73 m (128 cm), nad I p. strych Z = -1.77 m
+    const zLandingEnd = isBasementSlab ? -1.35 : isGroundSlab ? -1.73 : -1.77;
+    addCeramicBay(0.02, 1.03, zStairTrimmer, zLandingEnd);
+    // Podest WC i wnęki korytarza przy klatce (X od +1.03 do +2.22, Z od -2.35 do -0.25)
+    addCeramicBay(1.03, 2.22, zStairTrimmer, zSouthWallInner);
 
     // Trakt zachodni (Salon: X od -5.18 do -1.10 m)
     addCeramicBay(-2.35, -1.10, zNorthWallInner, zSouthWallInner);

@@ -453,19 +453,19 @@ export class CameraManager {
 
     switch (floorIndex) {
       case 0: // Podziemie / Kotłownia (-0.92 m)
-        this.playerPos.set(2.8, ELEVATIONS.BASEMENT_FLOOR, -4.1);
+        this.playerPos.set(2.8, ELEVATIONS.BASEMENT_FLOOR + 0.04, -4.1);
         this.yaw = Math.PI * 0.5;
         break;
-      case 1: // Parter - Salon i Weranda (+1.60 m)
-        this.playerPos.set(-3.2, ELEVATIONS.GROUND_FLOOR, -3.0);
+      case 1: // Parter - Korytarz / Salon (+1.64 m)
+        this.playerPos.set(-3.2, ELEVATIONS.GROUND_FLOOR + 0.04, -3.0);
         this.yaw = Math.PI * 0.5;
         break;
-      case 2: // I Piętro - Sypialnia główna i Taras (+4.70 m)
-        this.playerPos.set(-3.1, ELEVATIONS.FIRST_FLOOR, -3.0);
+      case 2: // I Piętro - Podest centralny korytarza (+4.74 m)
+        this.playerPos.set(0.50, ELEVATIONS.FIRST_FLOOR + 0.04, -2.35);
         this.yaw = Math.PI * 0.5;
         break;
-      case 3: // Poddasze / Strych (+7.55 m)
-        this.playerPos.set(0.3, ELEVATIONS.ATTIC_FLOOR, -2.5);
+      case 3: // Poddasze / Strych (+7.59 m)
+        this.playerPos.set(0.50, ELEVATIONS.ATTIC_FLOOR + 0.04, -2.35);
         this.yaw = Math.PI * 0.5;
         break;
       default: // Przed wejściem głównym od ulicy frontowej (0.00 m)
@@ -547,7 +547,7 @@ export class CameraManager {
       this.playerVelY = 0;
       this.isGrounded = true;
       this.stepSmoothOffsetY = 0;
-      this.playerPos.set(roomSpec.lookAt.x, roomSpec.elevationY, roomSpec.lookAt.z);
+      this.playerPos.set(roomSpec.lookAt.x, roomSpec.elevationY + 0.04, roomSpec.lookAt.z);
       if (!this.noclip && this.worldOctree) {
         this._syncCapsuleToPlayer();
         this._resolveCapsuleWorld(this._capsule, true);
@@ -685,16 +685,19 @@ export class CameraManager {
     const liftedY = stepCap.start.y - baseCap.start.y;
     if (liftedY < 0.08) return false;
 
-    // 2. Przesuń w poziomie na nowej wysokości i usuń ewentualne kolizje ze ścianami/drzwiami
-    stepCap.translate(_v1.set(dx, 0, dz));
+    // 2. Przesuń w poziomie na nowej wysokości (min. 8.5 cm w głąb stopnicy, aby półkula r=21 cm stanęła stabilnie za noskiem stopnia z normal.y >= 0.80)
+    const stepHorizLen = Math.hypot(dx, dz);
+    if (stepHorizLen < 1e-6) return false;
+    const probeScale = Math.max(1.0, 0.085 / stepHorizLen);
+    stepCap.translate(_v1.set(dx * probeScale, 0, dz * probeScale));
     const res = this._resolveCapsuleWorld(stepCap, true, 3);
 
     const stepMovedSq =
       (stepCap.start.x - baseCap.start.x) ** 2 +
       (stepCap.start.z - baseCap.start.z) ** 2;
 
-    // Musi dać zauważalnie większy postęp poziomy niż zwykłe pchnięcie po ziemi
-    if (stepMovedSq <= normalMovedSq * 1.15 + 1e-6) {
+    // Musi dać zauważalnie większy postęp poziomy niż zwykłe pchnięcie po ziemi (ściana pełnej wysokości zwróci ~0)
+    if (stepMovedSq <= Math.max(normalMovedSq * 1.15, 0.0012)) {
       return false;
     }
 
